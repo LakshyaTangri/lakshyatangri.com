@@ -31,7 +31,7 @@ const ArchitecturalPhilosophy = () => {
                     </div>
 
                     <div className='mt-8 text-2xl font-semibold tracking-tight text-primary'>
-                        The objective is integration.
+                        The objective is to close the Gap with a SOLID bridge architected to meet approved requirements.
                     </div>
                 </div>
             </div>
