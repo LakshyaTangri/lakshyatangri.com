@@ -1,5 +1,3 @@
-import { FacebookIcon, InstagramIcon, TwitterIcon, YoutubeIcon } from 'lucide-react'
-
 import { Separator } from '@/components/ui/separator'
 
 import Logo from '@/components/logo'
@@ -21,21 +19,6 @@ const Footer = () => {
             <a href="mailto:info@lakshyatangri.com" className='hover:text-primary transition-colors ml-1'>info@lakshyatangri.com</a>
           </p>
           <p>N7, London & Delhi</p>
-        </div>
-
-        <div className='flex items-center gap-4'>
-          <a href='#' className='text-muted-foreground hover:text-foreground'>
-            <FacebookIcon className='size-5' />
-          </a>
-          <a href='#' className='text-muted-foreground hover:text-foreground'>
-            <InstagramIcon className='size-5' />
-          </a>
-          <a href='#' className='text-muted-foreground hover:text-foreground'>
-            <TwitterIcon className='size-5' />
-          </a>
-          <a href='#' className='text-muted-foreground hover:text-foreground'>
-            <YoutubeIcon className='size-5' />
-          </a>
         </div>
       </div>
 
