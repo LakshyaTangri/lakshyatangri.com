@@ -36,17 +36,6 @@ export const SITE_METADATA = {
   },
   language: 'en-US',
   locale: 'en_US',
-  icons: {
-    icon: [
-      { url: '/favicon/favicon.ico', sizes: '48x48' },
-      { url: '/favicon/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
-      { url: '/favicon/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
-      { url: '/favicon/android-chrome-192x192.png', sizes: '192x192', type: 'image/png' },
-      { url: '/favicon/android-chrome-512x512.png', sizes: '512x512', type: 'image/png' }
-    ],
-    apple: [{ url: '/favicon/apple-touch-icon.png', sizes: '180x180' }],
-    shortcut: [{ url: '/favicon/favicon.ico' }]
-  },
   openGraph: {
     type: 'website',
     locale: 'en_US',
@@ -83,9 +72,8 @@ export const SITE_METADATA = {
 // Social media links
 export const SOCIAL_LINKS = {
   github: GITHUB_URL,
-  twitter: 'https://twitter.com/lakshyatangri',
   linkedin: 'https://linkedin.com/in/lakshyatangri',
-  youtube: 'https://youtube.com/@lakshyatangri'
+
 }
 
 // Company information for structured data
@@ -105,7 +93,7 @@ export const COMPANY_INFO = {
   contactPoint: {
     telephone: '',
     contactType: 'professional inquiry',
-    email: 'lakshya@example.com' // Replace with actual email
+    email: 'info@lakshyatangri.com'
   },
   sameAs: Object.values(SOCIAL_LINKS)
 }

@@ -19,13 +19,13 @@ const HeroSection = ({ blogData }: { blogData: BlogPost[] }) => {
               Solution Architect | Enterprise Architect (TOGAF® Certified) | GenAI & Cloud Systems Strategist
             </Badge>
             <h1 className='text-3xl leading-[1.29167] font-semibold text-balance sm:text-4xl lg:text-5xl'>
-              Architecting Intelligent Enterprise Systems
+              Architecting Intelligent Enterprise Systems & Solutions
             </h1>
             <p className='text-muted-foreground max-w-2xl text-xl'>
               I design systems that think, scale, and endure. As a Solution Architect operating at the intersection of AWS Cloud, GenAI, MLOps, and Data Engineering, I help organisations transition from fragmented digital initiatives to cohesive, intelligence-driven enterprise platforms.
             </p>
             <div className='mt-4 flex flex-wrap gap-2'>
-              <Badge variant='secondary' className='text-xs'>Event-Driven Platforms</Badge>
+              <Badge variant='secondary' className='text-xs'>Enterprise Data & AI Platforms</Badge>
               <Badge variant='secondary' className='text-xs'>GenAI Operationalisation</Badge>
               <Badge variant='secondary' className='text-xs'>AI Operating Models</Badge>
               <Badge variant='secondary' className='text-xs'>Value Realisation</Badge>
