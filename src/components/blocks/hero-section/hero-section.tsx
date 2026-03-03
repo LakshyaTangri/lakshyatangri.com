@@ -16,7 +16,8 @@ const HeroSection = ({ blogData }: { blogData: BlogPost[] }) => {
         <div className='grid grid-cols-1 gap-12 lg:grid-cols-2 items-center'>
           <div className='flex flex-col items-start gap-4 text-left order-2 lg:order-1'>
             <Badge variant='outline' className='text-sm font-normal'>
-              Solution Architect | Enterprise Architect (TOGAF® Certified) | GenAI & Cloud Systems Strategist
+              Solution Architect | Enterprise Architect (TOGAF® Certified) |
+              GenAI & Cloud Systems Strategist
             </Badge>
             <h1 className='text-3xl leading-[1.29167] font-semibold text-balance sm:text-4xl lg:text-5xl'>
               Architecting Intelligent Enterprise Systems & Solutions
