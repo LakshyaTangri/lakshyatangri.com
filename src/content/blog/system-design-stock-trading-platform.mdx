@@ -1,0 +1,425 @@
+---
+id: 11
+slug: 'system-design-stock-trading-platform'
+title: 'System Design: Real-Time Stock Trading Platform on AWS'
+description: 'A deep dive into designing a scalable, low-latency stock trading platform using AWS cloud services.'
+imageUrl: '/images/blog-post/post-8.webp'
+imageAlt: 'Real-time stock trading platform architecture on AWS'
+pubDate: 'March 5, 2026'
+author: 'Lakshya Tangri'
+avatarUrl: '/images/post-11.webp'
+category: 'System Design'
+readTime: 12
+featured: true
+---
+
+## System Design: Real-Time Stock Trading Platform on AWS
+
+### What We're Building
+
+A real-time stock trading platform is one of the most demanding distributed systems you can design. It must handle millions of concurrent users, process thousands of trades per second, deliver market data with sub-millisecond latency, and guarantee zero data loss—all while remaining available 24/7.
+
+In this post, we walk through the full system design using the SysDesAI framework: requirements, capacity estimation, API design, data modeling, high-level architecture, and scalability strategy—all grounded in AWS-native services.
+
+---
+
+## Phase 1: Requirements
+
+### Functional Requirements
+
+- **Market Data Feed**: Stream real-time stock prices, bid/ask spreads, and order book updates to users
+- **Order Management**: Allow users to place, modify, and cancel buy/sell orders (market, limit, stop)
+- **Order Matching**: Match buy and sell orders using a price-time priority engine
+- **Portfolio Management**: Track user holdings, P&L, and transaction history
+- **User Authentication**: Secure login, KYC verification, and session management
+- **Notifications**: Real-time alerts for order fills, price thresholds, and account events
+- **Historical Data**: Access to OHLCV (Open, High, Low, Close, Volume) data for charting
+
+### Non-Functional Requirements
+
+- **Latency**: Order placement to acknowledgment under 10ms (P99); market data updates under 50ms end-to-end
+- **Throughput**: Handle 100,000 orders per second at peak; ingest 1 million market data ticks per second
+- **Availability**: 99.99% uptime during market hours (6.5 hours/day, 5 days/week)
+- **Consistency**: Strong consistency for order state and account balances (ACID guarantees)
+- **Durability**: Zero trade data loss; every order event must be persisted
+- **Scalability**: Horizontal scaling to support 10x growth without redesign
+- **Security**: End-to-end encryption, regulatory compliance (MiFID II, SEC Rule 15c3-5)
+
+### Out of Scope
+
+- Cryptocurrency trading
+- Margin lending and options/derivatives
+- High-frequency trading (HFT) co-location infrastructure
+
+---
+
+## Phase 2: Capacity Estimation
+
+### User Scale
+
+| Metric | Value |
+|---|---|
+| Total registered users | 5,000,000 |
+| Daily Active Users (DAU) | 500,000 |
+| Peak concurrent users | 100,000 |
+| Active sessions (market open) | 50,000 |
+
+### Traffic Estimation
+
+**Order Traffic:**
+- Average orders per user per day: 5
+- Total daily orders: 500,000 × 5 = **2.5 million orders/day**
+- Average orders per second (QPS): 2.5M / 86,400 ≈ **~29 orders/sec**
+- Peak QPS (market open surge, 10x factor): **~290 orders/sec**
+- Design target with safety margin: **1,000 orders/sec**
+
+**Market Data Feed:**
+- Tracked symbols: 10,000
+- Tick updates per symbol per second: 10
+- Total ticks/sec: **100,000 ticks/sec**
+- Peak (volatile sessions): **1,000,000 ticks/sec**
+
+**Read Traffic:**
+- Portfolio reads: 500,000 users × 10 reads/day = 5M reads/day → **~58 reads/sec**
+- Price quote lookups: 500,000 users × 50 lookups/day = 25M/day → **~290 reads/sec**
+- Peak read QPS (combined): **~5,000 reads/sec**
+
+### Storage Estimation
+
+**Order Data:**
+- Average order record size: 512 bytes
+- Daily orders: 2.5 million
+- Daily order storage: 2.5M × 512B ≈ **~1.2 GB/day**
+- 5-year retention: 1.2 GB × 365 × 5 ≈ **~2.2 TB**
+
+**Market Tick Data:**
+- Average tick size: 128 bytes
+- Daily ticks: 100,000 ticks/sec × 23,400 market seconds ≈ 2.3 billion ticks
+- Daily storage: 2.3B × 128B ≈ **~295 GB/day**
+- 1-year hot storage + 10-year cold archival on S3 Glacier
+
+**User & Portfolio Data:**
+- Average user record: 2 KB
+- 5 million users: **~10 GB** (negligible)
+
+### Bandwidth Estimation
+
+- **Inbound (orders):** 1,000 orders/sec × 512B = **~500 KB/sec**
+- **Outbound (market data push):** 50,000 concurrent users × 5 updates/sec × 128B = **~32 MB/sec**
+- **Peak outbound:** ~**320 MB/sec** (factoring 10x burst)
+
+### Infrastructure Estimates
+
+| Component | Count | Justification |
+|---|---|---|
+| API Gateway + Load Balancer | 3 (multi-AZ) | 5,000 peak read/write QPS |
+| Order Service (ECS) | 10 tasks | 1,000 orders/sec with headroom |
+| Market Data Service (ECS) | 20 tasks | 1M ticks/sec fan-out |
+| Matching Engine (EC2 c6i) | 2 (primary + hot standby) | Single-threaded, low-latency |
+| Redis Cluster (ElastiCache) | 6 nodes (3 primary, 3 replica) | 5,000 read/sec, sub-ms latency |
+| Amazon MSK (Kafka) | 6 brokers | 1M events/sec durability |
+
+---
+
+## Phase 3: API Design
+
+### REST APIs (via Amazon API Gateway)
+
+**Order Management**
+
+```
+POST   /v1/orders
+       Body: { symbol, side, type, quantity, price?, timeInForce }
+       Response: { orderId, status, timestamp }
+
+GET    /v1/orders/{orderId}
+       Response: { orderId, symbol, side, status, filledQty, avgPrice }
+
+DELETE /v1/orders/{orderId}
+       Response: { orderId, status: "CANCELLED" }
+
+GET    /v1/orders?status=OPEN&symbol=AAPL
+       Response: { orders: [...] }
+```
+
+**Portfolio**
+
+```
+GET    /v1/portfolio
+       Response: { holdings: [...], cashBalance, totalValue, dayPnL }
+
+GET    /v1/portfolio/history?from=2026-01-01&to=2026-03-01
+       Response: { trades: [...] }
+```
+
+**Market Data (REST)**
+
+```
+GET    /v1/quotes/{symbol}
+       Response: { symbol, bid, ask, last, volume, timestamp }
+
+GET    /v1/history/{symbol}?interval=1d&from=...&to=...
+       Response: { candles: [{ open, high, low, close, volume, timestamp }] }
+```
+
+### WebSocket API (via AWS API Gateway WebSocket)
+
+Real-time price streaming and order status updates are delivered via persistent WebSocket connections.
+
+```
+// Subscribe to price updates
+{ "action": "subscribe", "symbols": ["AAPL", "TSLA", "NVDA"] }
+
+// Server push — market data tick
+{ "type": "TICK", "symbol": "AAPL", "price": 213.45, "bid": 213.44, "ask": 213.46, "ts": 1741180800000 }
+
+// Server push — order fill notification
+{ "type": "ORDER_UPDATE", "orderId": "ord_123", "status": "FILLED", "avgPrice": 213.45, "filledQty": 10 }
+```
+
+---
+
+## Phase 4: Data Modeling
+
+### Order Table (Amazon Aurora PostgreSQL)
+
+```sql
+CREATE TABLE orders (
+  order_id       UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id        UUID NOT NULL,
+  symbol         VARCHAR(10) NOT NULL,
+  side           ENUM('BUY', 'SELL') NOT NULL,
+  order_type     ENUM('MARKET', 'LIMIT', 'STOP') NOT NULL,
+  status         ENUM('PENDING', 'OPEN', 'PARTIALLY_FILLED', 'FILLED', 'CANCELLED') NOT NULL,
+  quantity       DECIMAL(18, 8) NOT NULL,
+  filled_qty     DECIMAL(18, 8) DEFAULT 0,
+  price          DECIMAL(18, 4),
+  avg_fill_price DECIMAL(18, 4),
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at     TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_orders_user_id  ON orders(user_id);
+CREATE INDEX idx_orders_symbol   ON orders(symbol, status);
+CREATE INDEX idx_orders_created  ON orders(created_at DESC);
+```
+
+### Portfolio / Holdings (Amazon DynamoDB)
+
+```json
+{
+  "PK": "USER#user_id_xyz",
+  "SK": "HOLDING#AAPL",
+  "symbol": "AAPL",
+  "quantity": 150,
+  "avgCostBasis": 198.32,
+  "lastUpdated": "2026-03-05T10:30:00Z"
+}
+```
+
+DynamoDB is chosen for portfolio reads due to its single-digit millisecond latency at scale and ability to handle 50,000 concurrent reads without capacity planning headaches.
+
+### Market Tick Data (Amazon Timestream)
+
+```
+measure_name: "price_tick"
+dimensions:   { symbol: "AAPL", exchange: "NASDAQ" }
+time:          2026-03-05T14:30:00.123Z
+measures:      { price: 213.45, bid: 213.44, ask: 213.46, volume: 1240 }
+```
+
+Amazon Timestream is purpose-built for time-series data, providing automatic tiering from in-memory hot storage to magnetic storage for historical data—ideal for the billions of daily ticks generated by this platform.
+
+### Order Book (Amazon ElastiCache for Redis)
+
+```
+Key:  ORDERBOOK:AAPL:BUY    (Sorted Set — price as score)
+Key:  ORDERBOOK:AAPL:SELL   (Sorted Set — price as score)
+
+ZADD ORDERBOOK:AAPL:BUY 213.44 "order_id_abc|qty:100"
+ZRANGE ORDERBOOK:AAPL:BUY 0 9 WITHSCORES  # Top 10 bids
+```
+
+The in-memory order book in Redis enables the matching engine to retrieve the best bid/ask in O(log N) time, a core requirement for low-latency matching.
+
+---
+
+## Phase 5: High-Level Architecture
+
+### Core Components
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        AWS Cloud (Multi-AZ)                      │
+│                                                                   │
+│  ┌─────────┐    ┌──────────────┐    ┌──────────────────────┐    │
+│  │ Route53 │───▶│ CloudFront + │───▶│  API Gateway         │    │
+│  │   DNS   │    │     WAF      │    │  (REST + WebSocket)  │    │
+│  └─────────┘    └──────────────┘    └───────────┬──────────┘    │
+│                                                  │               │
+│         ┌────────────────────┬──────────────────┘               │
+│         ▼                    ▼                                    │
+│  ┌─────────────┐    ┌────────────────┐                          │
+│  │ Order       │    │ Market Data    │                          │
+│  │ Service     │    │ Service (ECS)  │                          │
+│  │ (ECS + ALB) │    │                │                          │
+│  └──────┬──────┘    └───────┬────────┘                          │
+│         │                   │                                    │
+│         ▼                   ▼                                    │
+│  ┌─────────────────────────────────────────────┐                │
+│  │           Amazon MSK (Kafka)                 │                │
+│  │  Topics: orders, trades, ticks, notifications│                │
+│  └──────────────┬──────────────────────────────┘                │
+│                 │                                                 │
+│    ┌────────────┼──────────────┐                                 │
+│    ▼            ▼              ▼                                  │
+│ ┌───────────┐ ┌───────────┐ ┌──────────────────┐               │
+│ │ Matching  │ │ Portfolio │ │ Notification      │               │
+│ │ Engine    │ │ Service   │ │ Service           │               │
+│ │ (EC2 c6i) │ │ (ECS)     │ │ (Lambda + SNS)   │               │
+│ └─────┬─────┘ └─────┬─────┘ └──────────────────┘               │
+│       │             │                                            │
+│  ┌────▼────┐   ┌────▼──────────────────────────────────┐       │
+│  │  Redis  │   │  Aurora PostgreSQL  │  DynamoDB         │       │
+│  │ (Order  │   │  (Orders, Trades)   │  (Portfolio,      │       │
+│  │  Book)  │   │                     │   User Data)      │       │
+│  └─────────┘   └─────────────────────┴───────────────────┘      │
+│                                                                   │
+│  ┌──────────────────────────────────────────────────────────┐   │
+│  │     Amazon Timestream (Tick History + OHLCV Data)         │   │
+│  └──────────────────────────────────────────────────────────┘   │
+│                                                                   │
+│  ┌──────────────────────────────────────────────────────────┐   │
+│  │     S3 + Glacier (Long-term Trade Archive, Compliance)    │   │
+│  └──────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### AWS Services Breakdown
+
+**Compute & Orchestration**
+- **Amazon ECS (Fargate)**: Runs Order Service, Market Data Service, Portfolio Service as containerized microservices with auto-scaling
+- **EC2 c6i instances**: Dedicated compute-optimized instances for the matching engine, requiring consistent low-latency CPU performance rather than serverless variability
+- **AWS Lambda**: Event-driven notification delivery, trade confirmations, and compliance event logging
+
+**Messaging & Streaming**
+- **Amazon MSK (Managed Kafka)**: The central event bus. All order events, trade fills, and market ticks flow through MSK topics, providing durability, replay capability, and decoupling between services
+- **Amazon SNS + SQS**: Fan-out push notifications (email, SMS, mobile push) for order fills and alerts
+
+**Data Storage**
+- **Amazon Aurora PostgreSQL (Multi-AZ)**: ACID-compliant storage for orders and trades—the source of truth for all financial transactions
+- **Amazon DynamoDB**: Sub-millisecond portfolio reads with global tables for multi-region active-active reads
+- **Amazon ElastiCache for Redis**: In-memory order book for the matching engine; also serves as session cache and leaderboard
+- **Amazon Timestream**: Time-series market tick data with automatic data lifecycle management
+- **Amazon S3 + Glacier**: Long-term archival of trade history and compliance reports at low cost
+
+**Networking & Edge**
+- **Amazon CloudFront + AWS WAF**: CDN for static assets; WAF protects against DDoS, SQL injection, and rate-limit abuse
+- **Amazon Route 53**: DNS with health check-based failover between regions
+- **API Gateway (WebSocket)**: Manages 50,000+ concurrent WebSocket connections for real-time market data push
+
+**Security & Compliance**
+- **AWS IAM + Cognito**: Authentication, authorization, and user identity management
+- **AWS KMS**: Encryption at rest for all sensitive financial data
+- **AWS CloudTrail + Security Hub**: Audit trail for every API call; required for SEC and MiFID II compliance
+
+---
+
+## Phase 6: Deep Dive — The Matching Engine
+
+The matching engine is the most critical and latency-sensitive component of the system. It must process orders in strict price-time priority.
+
+### Design Principles
+
+1. **Single-threaded per symbol**: Each stock symbol runs its own matching engine thread to eliminate lock contention. A single c6i instance can handle 500+ symbols with independent threads.
+2. **In-memory order book**: The buy and sell queues live entirely in RAM (Redis Sorted Sets for the distributed view, plus local in-process maps for the hot path).
+3. **Event-sourced state**: Every state change (order placed, matched, cancelled) is published to MSK. The engine can reconstruct any historical order book state by replaying events.
+
+### Order Flow
+
+```
+1. User submits order via REST API
+2. Order Service validates (sufficient balance, valid symbol, risk checks)
+3. Order Service publishes ORDER_RECEIVED event to MSK topic: "orders"
+4. Matching Engine consumes event, checks order book
+5a. If match found → publish TRADE_EXECUTED to MSK "trades" topic
+5b. If no match → place order in Redis order book, publish ORDER_OPEN event
+6. Portfolio Service consumes TRADE_EXECUTED → update holdings, debit/credit balance
+7. Notification Service consumes TRADE_EXECUTED → push WebSocket notification to user
+8. Aurora write: persist final order state and trade record
+```
+
+### Matching Algorithm
+
+```python
+def match_order(incoming_order, order_book):
+    if incoming_order.side == "BUY":
+        best_asks = order_book.get_asks()  # sorted ascending by price
+        for ask in best_asks:
+            if ask.price <= incoming_order.price:  # limit price check
+                execute_trade(incoming_order, ask)
+                if incoming_order.is_filled():
+                    break
+    # Remaining unfilled qty → rests on order book
+    if incoming_order.remaining_qty > 0:
+        order_book.add(incoming_order)
+```
+
+---
+
+## Phase 7: Scalability & Reliability Strategy
+
+### Horizontal Scaling
+
+- **Order Service**: ECS task auto-scaling based on CPU > 70% or SQS queue depth > 1,000 messages. Scales from 5 to 50 tasks within 90 seconds.
+- **Market Data Fan-out**: Kafka consumer groups allow adding more market data service tasks without rebalancing risk—each task picks up additional symbol partitions automatically.
+- **WebSocket connections**: API Gateway WebSocket handles connection state, removing the need for sticky sessions on the application layer. Connection state is stored in DynamoDB, allowing any backend task to push to any client.
+
+### Fault Tolerance
+
+- **Multi-AZ deployment**: All ECS services, Aurora (synchronous standby), and MSK brokers span 3 Availability Zones. An AZ failure causes < 30 seconds of disruption.
+- **Matching engine hot standby**: A passive replica consumes all events from MSK and maintains a synchronized in-memory order book, ready to take over within 5 seconds via Route 53 DNS failover.
+- **Circuit breakers**: Each microservice implements circuit breaker patterns using AWS App Mesh, preventing cascade failures when downstream services are degraded.
+
+### Multi-Region Strategy
+
+For disaster recovery and reduced latency for global users:
+
+| Region | Role | RPO | RTO |
+|---|---|---|---|
+| us-east-1 | Primary (active) | 0 seconds | — |
+| us-west-2 | Hot standby | < 5 seconds | < 30 seconds |
+| eu-west-1 | Read replica + EU users | < 10 seconds | < 60 seconds |
+
+DynamoDB Global Tables provide active-active replication for portfolio data. Aurora Global Database replicates to the standby region with < 1 second lag. MSK MirrorMaker 2 keeps Kafka topics synchronized across regions.
+
+### Caching Strategy
+
+| Layer | Technology | TTL | Purpose |
+|---|---|---|---|
+| Quote cache | Redis | 500ms | Latest prices for REST polling |
+| Order book snapshot | Redis | Real-time | Matching engine hot path |
+| Historical OHLCV | CloudFront | 1 minute | Chart data CDN edge caching |
+| User session | ElastiCache | 30 minutes | Auth token validation |
+
+---
+
+## Phase 8: Monitoring & Observability
+
+A trading platform demands more than basic uptime monitoring—every millisecond of latency and every failed order must be captured and acted upon.
+
+- **Amazon CloudWatch**: Custom dashboards for order throughput (orders/sec), matching latency (P50/P95/P99), and Kafka consumer lag
+- **AWS X-Ray**: Distributed tracing across microservices to pinpoint latency sources in the order flow
+- **Service Level Objectives (SLOs)**: Automated alarms trigger when P99 order acknowledgment latency exceeds 10ms or order fill rate drops below 99.5%
+- **Dead Letter Queues**: Every MSK consumer sends failed messages to SQS DLQs, ensuring no trade event is silently lost
+- **Compliance Audit Trail**: CloudTrail logs every API call; AWS Config tracks infrastructure changes—both required for regulatory reporting
+
+---
+
+## Conclusion: Lessons from the Design
+
+Designing a real-time stock trading platform forces every hard trade-off in distributed systems into the spotlight. Strong consistency (Aurora ACID for trades) versus high availability (DynamoDB for portfolios). Low latency (Redis order book) versus durability (MSK event log). Single-threaded simplicity (matching engine) versus horizontal scalability (everything else).
+
+The architecture presented here leans into AWS managed services to minimize operational overhead while meeting the stringent latency, consistency, and compliance requirements of financial markets. The event-driven backbone through Amazon MSK is the key architectural decision—it decouples services, provides replay capability for disaster recovery, and creates a natural audit trail for every trade.
+
+The best trading platforms are not just fast—they are provably correct, observable at every layer, and designed to fail gracefully. Build those properties in from day one, and scale becomes an engineering problem rather than a business risk. 🚀
