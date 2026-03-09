@@ -31,7 +31,8 @@ const ArchitecturalPhilosophy = () => {
                     </div>
 
                     <div className='mt-8 text-2xl font-semibold tracking-tight text-primary'>
-                        The objective is to close the Gap with a SOLID bridge architected to meet approved requirements.
+                        "If you are distressed by anything external, the pain is not due to the thing itself, but to your estimate of it; and this you have the power to revoke at any moment.
+                        <br /> by Marcus Aurelius, Meditations"
                     </div>
                 </div>
             </div>
