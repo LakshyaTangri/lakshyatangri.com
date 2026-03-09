@@ -12,14 +12,28 @@ category: "Product"
 readTime: 14
 featured: true
 ---
+---
+id: 12
+slug: 'ai-legal-Assistant/research-platform-system-design'
+title: 'AI-Powered Legal Research & Drafting Platform'
+description: 'A senior engineer's blueprint for building a scalable, RAG-powered legal assistant for lawyers, researchers, and law students—covering architecture, data pipelines, security, and cost.'
+imageUrl: '/images/blog-post/post-12.webp'
+imageAlt: 'AI legal Assistant platform architecture'
+pubDate: 'March 9, 2026'
+author: 'Lakshya Tangri'
+avatarUrl: '/images/lakshya.png'
+category: 'Product'
+readTime: 14
+featured: true
+---
 
 ## System Design: AI-Powered Legal Research & Drafting Platform
 
 ### The Problem With Legal Research Today
 
-A junior advocate in Mumbai spends 6 hours hunting through Indian Kanoon trying to find the right Supreme Court precedent for a bail application. A law student in Delhi drafts a petition from scratch because no template exists that matches their facts. A corporate lawyer cross-references three different Acts manually to answer a client question in under an hour.
+A junior solicitor in the City spends 6 hours trawling through BAILII and Westlaw trying to locate the right Court of Appeal precedent for a contractual dispute. A law student at UCL drafts a witness statement from scratch because no template exists that matches their facts. A corporate lawyer at a Magic Circle firm cross-references the Companies Act, the FCA Handbook, and case law manually to answer a client question before the morning meeting.
 
-The legal profession is knowledge-intensive, citation-dependent, and massively under-served by modern AI tooling. Platforms like Harvey AI have begun changing this in the West. The opportunity for an **Indian-context legal AI**—one fluent in IPC, CrPC, the Constitution, and decades of High Court and Supreme Court judgments—is enormous.
+The legal profession is knowledge-intensive, citation-dependent, and massively under-served by modern AI tooling. The opportunity for a **UK-context legal AI**—one fluent in English contract law, the Proceeds of Crime Act, the Human Rights Act, and decades of Supreme Court and Court of Appeal judgments—is enormous.
 
 This post walks through the complete system design for such a platform: an AI-powered assistant for legal research, document analysis, and draft generation at scale.
 
@@ -29,7 +43,7 @@ This post walks through the complete system design for such a platform: an AI-po
 
 **AI Legal Research Assistant**
 - Answer natural-language legal questions with cited case law and statute references
-- Example queries: "Bail provisions under IPC Section 437" or "Supreme Court judgments on Article 21 privacy rights"
+- Example queries: "Bail provisions under the Bail Act 1976" or "Supreme Court judgments on Article 8 privacy rights under the Human Rights Act"
 - Use RAG (Retrieval-Augmented Generation) to ground answers in verified legal sources
 
 **Document Upload & Analysis**
@@ -221,9 +235,9 @@ AWS Textract handles scanned court files with high accuracy for printed text. Fo
 
 Legal drafts require more structure than open-ended Q&A. The service uses a **hybrid template + AI** approach:
 
-1. User selects draft type and jurisdiction (e.g., "Bail Application — Delhi High Court")
+1. User selects draft type and jurisdiction (e.g., "Bail Application — Crown Court, England & Wales")
 2. System loads a **curated structural template** (headings, required sections, standard clauses for that court)
-3. User fills a facts form (client name, FIR number, sections charged, key arguments)
+3. User fills a facts form (client name, case reference, charges, key arguments)
 4. Service assembles a structured prompt injecting both the template skeleton and user facts
 5. LLM generates the narrative body within the structure
 6. Post-processing applies **legal formatting**: proper cause title format, numbering conventions, prayer clause structure
@@ -246,11 +260,11 @@ The corpus is the platform's competitive moat. Ingestion pipeline:
 
 ```
 [Sources]
-  ├── Indian Kanoon API
-  ├── Supreme Court of India website scraper
-  ├── High Court websites (24 HCs)
-  ├── India Code (legislation.gov.in)
-  └── Bare Acts from official sources
+  ├── BAILII (British and Irish Legal Information Institute)
+  ├── UK Supreme Court website
+  ├── Court of Appeal & High Court judgment portals
+  ├── legislation.gov.uk (primary + secondary legislation)
+  └── FCA Handbook, ICO guidance, SRA standards
 
 [Ingestion Pipeline]
   Crawler → HTML Cleaner → Metadata Extractor → Chunker → Embedder → Vector DB
@@ -350,8 +364,8 @@ Three namespaces with separate indexes:
 - **Encryption**: AES-256 at rest (S3 SSE-KMS), TLS 1.3 in transit
 - **Document isolation**: Each user's uploaded documents stored in an S3 prefix with IAM conditions; vector DB namespaced per user
 - **PII handling**: User documents are never sent to third-party LLMs without explicit consent. On-premise Llama deployment available for enterprise tier.
-- **Audit logging**: All queries, document accesses, and draft generations logged to CloudWatch with user ID and timestamp (required for legal compliance)
-- **VAPT**: Quarterly penetration testing; bug bounty program for responsible disclosure
+- **Audit logging**: All queries, document accesses, and draft generations logged to CloudWatch with user ID and timestamp (required for SRA and ICO compliance)
+- **UK GDPR & DPA 2018**: Data residency in AWS eu-west-2 (London) region; data processing agreements in place with all third-party vendors
 
 ## Phase 6: Key Design Decisions & Trade-offs
 
@@ -375,10 +389,10 @@ We adopt microservices from day one because the five core services have wildly d
 
 Track these metrics weekly:
 
-- **RAG Precision**: % of returned citations that exist and are relevant (target: &gt;90%)
-- **Hallucination Rate**: Citations returned that don't exist in the corpus (target: &lt;1%)
-- **P95 Query Latency**: 95th percentile end-to-end response time (target: &lt;5s)
-- **Document Processing SLA**: % of documents fully processed within 2 minutes (target: &gt;95%)
+- **RAG Precision**: % of returned citations that exist and are relevant (target: >90%)
+- **Hallucination Rate**: Citations returned that don't exist in the corpus (target: <1%)
+- **P95 Query Latency**: 95th percentile end-to-end response time (target: <5s)
+- **Document Processing SLA**: % of documents fully processed within 2 minutes (target: >95%)
 - **User Retention (D30)**: % of users returning after 30 days (north star metric)
 
 ## Cost Estimation (100k Users, Monthly)
@@ -412,6 +426,6 @@ The architecture is designed to accommodate these without re-platforming:
 
 An AI legal platform is fundamentally a **knowledge retrieval and reasoning system** with extreme accuracy requirements. The architecture choices here—RAG over fine-tuning, citation validation before every response, hybrid keyword+semantic search—all flow from one principle: in law, a wrong answer isn't just unhelpful, it's harmful.
 
-The technology stack (Next.js → FastAPI → Kinesis/SQS → RAG pipeline → PostgreSQL + Pinecone) is proven at scale. The real moat is the **legal corpus**: the breadth, freshness, and quality of the indexed Indian legal data will determine whether this platform becomes essential to the legal profession.
+The technology stack (Next.js → FastAPI → Kinesis/SQS → RAG pipeline → PostgreSQL + Pinecone) is proven at scale. The real moat is the **legal corpus**: the breadth, freshness, and quality of the indexed UK legal data—BAILII judgments, legislation.gov.uk statutes, FCA and SRA guidance—will determine whether this platform becomes essential to the legal profession.
 
-Build the data pipeline right, validate every citation, and ship the simplest version that gives a junior advocate their first correct answer in 10 seconds instead of 6 hours. The rest follows. ⚖️
+Build the data pipeline right, validate every citation, and ship the simplest version that gives a junior solicitor their first correct answer in 10 seconds instead of 6 hours. The rest follows. ⚖️
