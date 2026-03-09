@@ -21,28 +21,6 @@ const CTA = () => {
                   loading='lazy'
                 />
               </div>
-
-              {/* Right Column - Content */}
-              <Card className='bg-muted rounded-lg border-0 shadow-none'>
-                <CardContent className='flex h-full flex-col justify-between gap-4'>
-                  <h2 className='text-xl leading-tight font-semibold lg:text-2xl'>
-                    Explore insights, stories, and strategies that help you build better products every day.
-                  </h2>
-                  <div>
-                    <p className='text-muted-foreground mb-3 text-base'>
-                      Join 1,000,000+ subscribers receiving expert tips on earning more, investing smarter and living
-                      better, all in our free newsletter.
-                    </p>
-                    {/* Email Form */}
-                    <form className='gap-3 py-1 max-sm:space-y-2 sm:flex sm:flex-row'>
-                      <Input type='email' placeholder='Your email' className='bg-background h-10 flex-1 text-base' />
-                      <Button size='lg' className='text-base max-sm:w-full' asChild type='submit'>
-                        <a href='#'>Subscribe</a>
-                      </Button>
-                    </form>
-                  </div>
-                </CardContent>
-              </Card>
             </div>
           </CardContent>
         </Card>
