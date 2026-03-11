@@ -89,45 +89,62 @@ Legend Paradigm (unified semantics)
 
 Legend is composed of six purpose-built components that together cover the full data lifecycle.
 
-```mermaid
-graph TD
-    A[Legend Studio\nModel Authoring] --> B[Legend SDLC\nVersion Control]
-    B --> C[Legend Depot\nArtifact Registry]
-    C --> D[Legend Engine\nExecution Layer]
-    D --> E[Legend Query\nSelf-Service UI]
-    D --> F[Legend Services\nREST API Generation]
-    D --> G[(Physical Stores\nOracle / Postgres / Kafka / Files)]
-
-    style A fill:#b84a2e,color:#fff
-    style D fill:#1a1814,color:#e8d5a3
-    style G fill:#3a3530,color:#e8d5a3
+```text
++------------------------------------+
+| Legend Studio (Model Authoring)    |
++------------------------------------+
+                  |
+                  v
++------------------------------------+
+| Legend SDLC (Version Control)      |
++------------------------------------+
+                  |
+                  v
++------------------------------------+
+| Legend Depot (Artifact Registry)   |
++------------------------------------+
+                  |
+                  v
++------------------------------------+
+| Legend Engine (Execution Layer)    |
++------------------------------------+
+          /       |       \
+         /        |        \
+        v         v         v
++----------+ +----------+ +--------------------+
+| Legend   | | Legend   | | Physical Stores    |
+| Query    | | Services | | (Oracle, Postgres, |
+| (UI)     | | (API)    | |  Kafka, Files)     |
++----------+ +----------+ +--------------------+
 ```
 
-| Component | Role |
-|---|---|
-| **Studio** | Visual editor for Pure classes, mappings, runtimes, and relationship diagrams |
-| **SDLC** | Model-centric version control (backed by GitLab); branching, review, release for metadata entities |
-| **Depot** | Artifact registry enabling cross-team and cross-institution model reuse |
-| **Engine** | Resolves queries against mappings and runtimes; generates optimized SQL or equivalent |
-| **Query** | Drag-and-drop self-service UI; navigates the semantic graph without SQL |
-| **Services** | Promotes any query to a production-grade, SDLC-backed REST API with one click |
+```text
+Component     Role
+---------     ----
+Studio        Visual editor for Pure classes, mappings, runtimes, and relationship diagrams
+SDLC          Model-centric version control (backed by GitLab); branching, review, release for metadata entities
+Depot         Artifact registry enabling cross-team and cross-institution model reuse
+Engine        Resolves queries against mappings and runtimes; generates optimized SQL or equivalent
+Query         Drag-and-drop self-service UI; navigates the semantic graph without SQL
+Services      Promotes any query to a production-grade, SDLC-backed REST API with one click
+```
 
 ### The Request Flow
 
-```mermaid
-sequenceDiagram
-    participant A as Architect (Studio)
-    participant S as SDLC + Depot
-    participant E as Engine
-    participant Q as Analyst (Query)
-    participant Svc as Services (API)
-
-    A->>S: Author Pure model + mapping + runtime; commit + review
-    S->>E: Publish model version; Engine resolves
-    Q->>E: Build query via drag-and-drop
-    E->>E: Generate execution plan; push to physical store
-    Q->>Svc: Promote query to production API
-    Svc-->>E: Versioned REST endpoint backed by same model
+```text
+Architect      SDLC +        Engine        Analyst        Services
+(Studio)       Depot                       (Query)        (API)
+   |             |             |             |             |
+   |--Author---->|             |             |             |
+   | (commit)    |             |             |             |
+   |             |--Publish--->|             |             |
+   |             |             |<--Build-----|             |
+   |             |             |   query     |             |
+   |             |             |--Execute--->| (internal)  |
+   |             |             |             |             |
+   |             |             |             |--Promote--->|
+   |             |             |<------------|--Versioned--|
+   |             |             |             |  REST API   |
 ```
 
 Throughout this flow, **lineage is captured automatically** - every field traces back through every transformation to its physical source. Regulatory lineage becomes a byproduct of modeling, not a separate documentation effort.
@@ -186,14 +203,11 @@ Crucially, mappings between logical model and physical store are **first-class P
 
 ## 06 - Four Layers of Data Modeling
 
-```mermaid
-graph LR
-    A[Business Model\nPure classes + constraints] --> B[Mapping\nLogical-to-physical bindings]
-    B --> C[Runtime\nEnvironment connections]
-    C --> D[Execution Plan\nInspectable query tree + lineage]
-
-    style A fill:#b84a2e,color:#fff
-    style D fill:#1a1814,color:#e8d5a3
+```text
+[Business Model] ---> [Mapping] ---> [Runtime] ---> [Execution Plan]
+(Pure classes         (Logical-to-   (Environment   (Inspectable query
+ + constraints)        physical       connections)   tree + lineage)
+                       bindings)
 ```
 
 - **Business Model:** Pure class hierarchy encoding domain concepts with cardinalities and constraints. Speaks the domain language, readable by business stakeholders.
@@ -205,16 +219,10 @@ graph LR
 
 ## 07 - End-to-End Data Lifecycle
 
-```mermaid
-flowchart LR
-    M[Model\nStudio] --> Map[Map\nPhysical Bind]
-    Map --> Q[Query\nDrag-and-Drop]
-    Q --> API[API\nServices]
-    API --> Gov[Govern\nSDLC + Lineage]
-    Gov --> A[Analyze\nDownstream Apps]
-
-    style M fill:#b84a2e,color:#fff
-    style Gov fill:#c8943a,color:#fff
+```text
+[Model] ---> [Map] ---> [Query] ---> [API] ---> [Govern] ---> [Analyze]
+(Studio)     (Physical  (Drag &      (Services) (SDLC +       (Downstream
+              Bind)      Drop)                   Lineage)      Apps)
 ```
 
 Each stage is fully traceable. Governance is structural - constraints enforced at model definition, lineage automatic, every change peer-reviewed through SDLC. This is categorically different from BI tools or ETL frameworks where governance is retrofitted after the fact.
@@ -252,25 +260,29 @@ Deutsche Bank, Morgan Stanley, and RBC used a shared Legend instance to build FX
 
 ## 09 - Advantages
 
-| Advantage | What It Means in Practice |
-|---|---|
-| **Governance by design** | Constraints in model; lineage automatic; SDLC review mandatory. Cannot accidentally ship ungoverned data. |
-| **Business-engineering alignment** | Studio diagrams are readable by domain experts and engineers alike. Eliminates requirements-to-schema translation loss. |
-| **One-click API generation** | Query to production REST API is a modeling step, not an infrastructure project. Consistently versioned and SDLC-backed. |
-| **Cross-institution interoperability** | Models are SDLC-backed code - shareable across institutional boundaries via FINOS. ISDA CDM is proof. |
-| **Store agnosticism** | Same model executes against Oracle, PostgreSQL, Spark, Kafka, or flat files. Critical in legacy-heavy environments. |
+```text
+Advantage                           What It Means in Practice
+---------------------------------   ---------------------------------------------------------------------------------------------------------
+Governance by design                Constraints in model; lineage automatic; SDLC review mandatory. Cannot accidentally ship ungoverned data.
+Business-engineering alignment      Studio diagrams are readable by domain experts and engineers alike. Eliminates requirements-to-schema translation loss.
+One-click API generation            Query to production REST API is a modeling step, not an infrastructure project. Consistently versioned and SDLC-backed.
+Cross-institution interoperability  Models are SDLC-backed code - shareable across institutional boundaries via FINOS. ISDA CDM is proof.
+Store agnosticism                   Same model executes against Oracle, PostgreSQL, Spark, Kafka, or flat files. Critical in legacy-heavy environments.
+```
 
 ---
 
 ## 10 - Limitations: An Honest Assessment
 
-| Limitation | Severity | Notes |
-|---|---|---|
-| Pure learning curve | High | Bespoke language; weeks of ramp-up even for senior engineers |
-| Operational complexity | High | Requires Studio, Engine, SDLC (GitLab), Depot, Query, Services - large infrastructure footprint |
-| Narrow ecosystem fit | Medium | Designed for large financial institutions; poor fit outside finance |
-| DSL monoculture risk | Medium | Breaking Pure changes or weak community tooling creates migration risk |
-| Modern stack integration | Medium | No native connectors to Airflow, dbt, or Spark; custom work required |
+```text
+Limitation                  Severity   Notes
+----------------------      --------   -----------------------------------------------------------------------------------------------
+Pure learning curve         High       Bespoke language; weeks of ramp-up even for senior engineers
+Operational complexity      High       Requires Studio, Engine, SDLC (GitLab), Depot, Query, Services - large infrastructure footprint
+Narrow ecosystem fit        Medium     Designed for large financial institutions; poor fit outside finance
+DSL monoculture risk        Medium     Breaking Pure changes or weak community tooling creates migration risk
+Modern stack integration    Medium     No native connectors to Airflow, dbt, or Spark; custom work required
+```
 
 ---
 
@@ -286,13 +298,15 @@ Abstraction Layer Map
   Storage              -->  Snowflake, BigQuery, Postgres, Oracle
 ```
 
-| Platform | Primary Abstraction | Governance | Best Fit |
-|---|---|---|---|
-| FINOS Legend | Semantic data model (Pure) | Structural, model-encoded | Complex financial domains; cross-institution standardization |
-| dbt | SQL transformation model | Version-controlled SQL | Analytics engineering on cloud warehouses |
-| Apache Spark | Distributed processing | External; no semantic layer | Large-scale batch and streaming |
-| Snowflake / BigQuery | SQL storage + compute | Access control; external catalog | Analytical workloads; fast SQL |
-| AtScale / Cube | Metric and dimension model | Metric consistency | Consistent BI metrics across tools |
+```text
+Platform               Primary Abstraction          Governance                     Best Fit
+--------------------   --------------------------   ----------------------------   ------------------------------------------------------------
+FINOS Legend           Semantic data model (Pure)   Structural, model-encoded      Complex financial domains; cross-institution standardization
+dbt                    SQL transformation model     Version-controlled SQL         Analytics engineering on cloud warehouses
+Apache Spark           Distributed processing       External; no semantic layer    Large-scale batch and streaming
+Snowflake / BigQuery   SQL storage + compute        Access control; external cat   Analytical workloads; fast SQL
+AtScale / Cube         Metric and dimension model   Metric consistency             Consistent BI metrics across tools
+```
 
 Legend is not a replacement for the modern data stack. It operates *above* it at the semantic layer, delegating physical execution to Spark, PostgreSQL, or a cloud warehouse. The architectures are complementary.
 
@@ -300,13 +314,15 @@ Legend is not a replacement for the modern data stack. It operates *above* it at
 
 ## 12 - The Future: Semantic Infrastructure at Scale
 
-```mermaid
-graph TD
-    A[Data Contracts\nFormal producer-consumer interfaces] --> D[Legend's\nModel-Driven Architecture]
-    B[Semantic Data Layers\nSingle governed meaning layer] --> D
-    C[AI-Ready Data\nStructured semantics for LLMs] --> D
-
-    style D fill:#b84a2e,color:#fff
+```text
+[Data Contracts]                       [Semantic Data Layers]                      [AI-Ready Data]
+(Formal producer-consumer interfaces)  (Single governed meaning layer)             (Structured semantics for LLMs)
+                         \                        |                         /
+                          \                       |                        /
+                           v                      v                       v
+                         +-------------------------------------------------+
+                         |      Legend's Model-Driven Architecture         |
+                         +-------------------------------------------------+
 ```
 
 Legend sits at the convergence of three accelerating trends:
