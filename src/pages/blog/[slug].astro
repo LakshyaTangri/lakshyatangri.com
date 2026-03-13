@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/breadcrumb'
 import DynamicToc from '@/components/astro/DynamicToc.astro'
 import { AuthorMetadata } from '@/components/AuthorAvatar'
-import { getRelatedPosts, getPostNavigation, calculateReadTime } from '@/utils/blog'
+import { getRelatedPosts, getPostNavigation, calculateReadTime, normalizeCategory } from '@/utils/blog'
 import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react'
 
 import Blog from '@/components/blocks/blog-related-post/blog-related-post'
@@ -35,7 +35,8 @@ const allPosts = await getCollection('blog')
 const publishedPosts = allPosts
 
 // Get related posts (same category)
-const relatedPosts = getRelatedPosts(publishedPosts, entry.id, entry.data.category, 3)
+const normalizedCategory = normalizeCategory(entry.data.category)
+const relatedPosts = getRelatedPosts(publishedPosts, entry.id, normalizedCategory, 3)
 
 // Map relatedPosts to BlogPost type for the Blog component
 const formattedRelatedPosts = relatedPosts.map(post => ({
@@ -48,7 +49,7 @@ const formattedRelatedPosts = relatedPosts.map(post => ({
   pubDate: post.data.pubDate,
   author: post.data.author,
   avatarUrl: post.data.avatarUrl || '',
-  category: post.data.category,
+  category: normalizeCategory(post.data.category),
   readTime: post.data.readTime || calculateReadTime(post.body),
   featured: post.data.featured || false
 }))
@@ -106,7 +107,7 @@ const schema = {
                   </BreadcrumbItem>
                   <BreadcrumbSeparator />
                   <BreadcrumbItem>
-                    <BreadcrumbPage>{entry.data.category}</BreadcrumbPage>
+                    <BreadcrumbPage>{normalizedCategory}</BreadcrumbPage>
                   </BreadcrumbItem>
                 </BreadcrumbList>
               </Breadcrumb>

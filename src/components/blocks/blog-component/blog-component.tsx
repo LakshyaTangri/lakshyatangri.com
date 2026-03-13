@@ -103,6 +103,7 @@ const BlogGrid = ({ posts, onCategoryClick }: { posts: BlogPost[]; onCategoryCli
 
 const Blog = ({ blogData = [] }: BlogProps) => {
   const [selectedTab, setSelectedTab] = useState('All')
+  const [searchQuery, setSearchQuery] = useState('')
 
   // Filter out featured posts to avoid duplication with hero section
   // Sort posts by ID in descending order (newest first)
@@ -119,6 +120,15 @@ const Blog = ({ blogData = [] }: BlogProps) => {
       window.location.href = '#categories'
     }
   }
+
+  // Filter posts by search query (case-insensitive on title, description, category)
+  const searchFilteredPosts = nonFeaturedPosts.filter(post => {
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+    return post.title.toLowerCase().includes(q) ||
+           post.description.toLowerCase().includes(q) ||
+           post.category.toLowerCase().includes(q);
+  });
 
   return (
     <section className='py-8 sm:py-16 lg:py-24' id='categories'>
@@ -176,6 +186,8 @@ const Blog = ({ blogData = [] }: BlogProps) => {
               <Input
                 type='search'
                 placeholder='Search'
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 className='peer h-10 px-9 [&::-webkit-search-cancel-button]:appearance-none [&::-webkit-search-decoration]:appearance-none [&::-webkit-search-results-button]:appearance-none [&::-webkit-search-results-decoration]:appearance-none'
               />
             </div>
@@ -183,14 +195,14 @@ const Blog = ({ blogData = [] }: BlogProps) => {
 
           {/* All Posts Tab */}
           <TabsContent value='All'>
-            <BlogGrid posts={nonFeaturedPosts} onCategoryClick={handleTabChange} />
+            <BlogGrid posts={searchFilteredPosts} onCategoryClick={handleTabChange} />
           </TabsContent>
 
           {/* Category-specific Tabs */}
           {categories.slice(1).map((category, index) => (
             <TabsContent key={index} value={category}>
               <BlogGrid
-                posts={nonFeaturedPosts.filter(post => post.category === category)}
+                posts={searchFilteredPosts.filter(post => post.category === category)}
                 onCategoryClick={handleTabChange}
               />
             </TabsContent>

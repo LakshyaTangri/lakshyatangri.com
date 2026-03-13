@@ -3,10 +3,6 @@ import Layout from '@/layouts/Layout.astro'
 import { getCollection } from 'astro:content'
 import { normalizeCategory } from '@/utils/blog'
 
-import HeroSection from '@/components/blocks/hero-section/hero-section'
-import ProfessionalJourney from '@/components/blocks/about/professional-journey'
-import ArchitecturalPhilosophy from '@/components/blocks/about/architectural-philosophy'
-import BlogCoverage from '@/components/blocks/about/blog-coverage'
 import Blog from '@/components/blocks/blog-component/blog-component'
 import CTA from '@/components/blocks/cta-section/cta-section'
 
@@ -33,25 +29,16 @@ const allBlogPosts = publishedPosts
   .sort((a, b) => b.pubDate.localeCompare(a.pubDate))
 
 // Page-specific SEO configuration
-const pageTitle = ''
+const pageTitle = 'Blog | Lakshya Tangri'
 const pageDescription =
-  'Discover insightful articles and tutorials about modern web development, Astro, and building fast, scalable websites with cutting-edge tools.'
-const pageKeywords =
-  'web development, Astro tutorials, scalable websites, modern web technologies, SEO optimization, Tailwind CSS, shadcn UI'
+  'Read the latest articles on web development, product design, system architecture, and tech insights.'
 
 // Structured data for better SEO
 const schema = {
   '@context': 'https://schema.org',
-  '@type': 'WebApplication',
+  '@type': 'Blog',
   name: 'Lakshya Tangri Blog',
   description: pageDescription,
-  applicationCategory: 'DeveloperApplication',
-  operatingSystem: 'Any',
-  offers: {
-    '@type': 'Offer',
-    price: '0',
-    priceCurrency: 'USD'
-  },
   author: {
     '@type': 'Person',
     name: 'Lakshya Tangri'
@@ -59,12 +46,9 @@ const schema = {
 }
 ---
 
-<Layout title={pageTitle} description={pageDescription} keywords={pageKeywords} schema={schema}>
-  <!--  All Sections -->
-  <HeroSection blogData={allBlogPosts} client:load />
-  <ArchitecturalPhilosophy client:load />
-  <ProfessionalJourney client:load />
-  <BlogCoverage client:load />
-  <Blog blogData={allBlogPosts} client:load />
-  <CTA />
+<Layout title={pageTitle} description={pageDescription} schema={schema}>
+  <main class='flex flex-col pt-16 md:pt-24'>
+    <Blog blogData={allBlogPosts} client:load />
+    <CTA />
+  </main>
 </Layout>

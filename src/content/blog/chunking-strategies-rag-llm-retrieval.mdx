@@ -1,0 +1,763 @@
+---
+id: 14
+slug: 'chunking-strategies-rag-llm-retrieval'
+title: 'Chunking Strategies for RAG: The Hidden Factor Behind Good LLM Retrieval'
+description: 'Most RAG failures aren’t model failures—they’re chunking failures. A practical look at chunking as an architectural decision, including trade-offs, failure modes, and a decision framework for system design.'
+imageUrl: '/images/blog-post/post-11.webp'
+imageAlt: 'RAG chunking strategy and vector retrieval illustration'
+pubDate: 'March 12, 2026'
+author: 'Lakshya Tangri'
+avatarUrl: '/lakshya.png'
+category: 'AI Engineering'
+readTime: 9
+featured: false
+---
+
+# Chunking Strategies for RAG: The Hidden Factor Behind Good LLM Retrieval
+
+Your RAG pipeline's retrieval quality is often determined before your first embedding is computed.
+
+I've reviewed a lot of enterprise RAG implementations over the past couple of years — internal knowledge bases, contract analysis systems, support copilots, regulatory document search. The most common failure pattern isn't a weak embedding model or an undersized context window. It's that someone treated chunking as a preprocessing detail rather than an architectural decision.
+
+Chunking is where your documents become retrievable units. Get it wrong and no amount of downstream tuning will save you. Get it right and you've solved a significant portion of your retrieval quality problem before your LLM ever sees a token.
+
+This article is not a beginner's guide to RAG. It's a framework for engineers and architects who are building production systems and need to make defensible design choices — with full visibility into the trade-offs.
+
+---
+
+## Where Chunking Lives in the RAG Pipeline
+
+Before diving into strategies, here's where chunking sits in the overall flow. It's the first irreversible transformation your data goes through — everything downstream inherits its quality.
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                        RAG INGEST PIPELINE                          │
+│                                                                     │
+│  ┌──────────┐                                                       │
+│  │  PDF     │                                                       │
+│  │  DOCX    ├──► Parse & Extract ──► [ CHUNKING ] ──► Embed ──►    │
+│  │  TXT     │         text                │          vectors        │
+│  │  Code    │                             │                    ┌────┴────┐
+│  └──────────┘                    chunk metadata                │ Vector  │
+│                                  + boundaries                  │  Store  │
+│                                                                └────┬────┘
+└──────────────────────────────────────────────────────────────────── │ ───┘
+                                                                       │
+┌──────────────────────────────────────────────────────────────────── │ ───┐
+│                        RAG QUERY PIPELINE                            │   │
+│                                                                      │   │
+│  User Query ──► Embed query ──► Nearest-neighbor search ────────────┘   │
+│                                         │                               │
+│                                         ▼                               │
+│                               Retrieved chunks                          │
+│                                         │                               │
+│                                         ▼                               │
+│                              LLM  ( prompt + context )                  │
+│                                         │                               │
+│                                         ▼                               │
+│                                      Answer                             │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+Chunking is a one-time cost at ingest but a permanent constraint at query time. You can swap your LLM without re-indexing. You cannot change your chunking strategy without re-indexing.
+
+---
+
+## The Mental Model: Three Things Chunking Controls
+
+Before evaluating any strategy, you need a lens. Chunking strategy affects three independent system properties:
+
+```
+                    THE CHUNKING TRADE-OFF SPACE
+
+  Semantic Fidelity
+  (does each chunk mean one thing?)
+        ▲
+        │   ✦ Semantic        ✦ Structure-aware
+        │
+        │          ✦ Sentence / Para
+        │
+        │                 ✦ Recursive
+        │
+        │                          ✦ Fixed-size
+        └──────────────────────────────────────────►
+                                             Index Density
+                                      (more chunks = more cost)
+
+  ─────────────────────────────────────────────────────────
+  Retrieval Surface Area  =  chunk size (tokens)
+
+  Small chunks  →  precise retrieval,  thin context for LLM
+  Large chunks  →  noisy retrieval,    rich context for LLM
+  ─────────────────────────────────────────────────────────
+```
+
+**Semantic boundary fidelity** is whether each chunk represents a coherent, complete unit of meaning. A chunk that cuts mid-sentence, mid-table, or mid-argument breaks the semantic unit. When that chunk is retrieved, the LLM is working with an incomplete thought — and it will hallucinate to fill the gap. This is the most common and most underestimated chunking failure.
+
+**Retrieval surface area** is how much context a matched chunk actually delivers to the LLM. A 128-token chunk is highly precise — it ranks well in nearest-neighbor search because it's densely about one thing — but it may not contain enough context for the LLM to generate a useful answer. A 1024-token chunk gives the LLM breathing room but is harder to retrieve accurately because its embedding is a blurry average across multiple ideas.
+
+**Index density** is how many chunks exist and what that costs you. More chunks means higher storage, higher retrieval latency, and more noise in your top-K results. Fewer chunks means lower precision. This is a direct system cost trade-off that most teams don't model until it bites them in production.
+
+Every chunking decision you make is a simultaneous move along all three axes. There is no free lunch — but you can make the right trade-off for your specific use case if you understand the mechanism.
+
+---
+
+## The Strategies, Ranked by Architectural Complexity
+
+### 1. Fixed-Size / Token-Based Chunking
+
+Split the document into chunks of N tokens with an optional overlap of M tokens. That's it.
+
+```
+Document tokens:
+████████████████████████████████████████████████████████████████████
+
+Fixed-size split  (chunk_size=8, overlap=2):
+
+  Chunk 1        Chunk 2          Chunk 3          Chunk 4
+┌──────────┐   ┌────────────┐   ┌────────────┐   ┌──────────┐
+│ ▓▓▓▓▓▓▓▓ │   │ ░░▓▓▓▓▓▓▓▓ │   │ ░░▓▓▓▓▓▓▓▓ │   │ ░░▓▓▓▓▓▓ │
+└──────────┘   └────────────┘   └────────────┘   └──────────┘
+                 ▲▲ overlap        ▲▲ overlap       ▲▲ overlap
+                 stored twice      stored twice      stored twice
+
+▓ = unique tokens    ░ = overlapping tokens (duplicated in index)
+
+⚠  Cut may land mid-sentence — semantic unit is broken.
+```
+
+```python
+from langchain.text_splitter import TokenTextSplitter
+
+splitter = TokenTextSplitter(chunk_size=512, chunk_overlap=64)
+chunks = splitter.split_text(document)
+```
+
+**When it works:** High-volume ingest pipelines where you need predictable latency and storage. Homogeneous content where semantic coherence at boundaries is less critical — think streaming logs, financial data feeds, repetitive structured records.
+
+**Where it breaks:** Prose documents where a 512-token boundary lands mid-paragraph or mid-argument. The chunk is semantically incomplete, the embedding is degraded, and retrieval quality suffers even when the relevant content is technically in the index.
+
+**The system implication:** Fixed-size chunking is the lowest ingest cost strategy. If you are processing millions of documents and retrieval quality is adequate, don't over-engineer this. But recognize that you're trading semantic fidelity for throughput.
+
+**Overlap is not free.** Every overlapping token exists twice in your index. A 20% overlap on a 10-million-token corpus adds 2 million tokens of storage and proportionally increases retrieval scan time. Set overlap deliberately, not as a safety margin.
+
+---
+
+### 2. Sentence and Paragraph Splitting
+
+Use NLP-aware boundaries — sentence terminators, paragraph breaks — as natural chunk delimiters.
+
+```
+Clean prose document — splits work well:
+
+  "The contract governs liability.[.] Acme Corp agrees to indemnify.[.]
+   Payment terms are net-30.[.]
+
+   Section 4 covers termination.[.] Either party may exit
+   with 30 days notice.[.]"
+
+  ┌─────────────────────────────────────┐
+  │ The contract governs liability.     │  ← Chunk 1
+  └─────────────────────────────────────┘
+  ┌─────────────────────────────────────┐
+  │ Acme Corp agrees to indemnify.      │  ← Chunk 2
+  └─────────────────────────────────────┘
+  ┌─────────────────────────────────────┐
+  │ Payment terms are net-30.           │  ← Chunk 3
+  └─────────────────────────────────────┘
+
+Structured document — splits break:
+
+  ┌──────────────────────────────────────┐
+  │ Vendor    │ Cap ($M) │ Auto-Renewal  │  ← TABLE: no sentence
+  │───────────┼──────────┼──────────     │    terminators detected
+  │ Acme Corp │  0.5     │ Yes           │
+  │ BetaCo    │  2.0     │ No            │
+  └──────────────────────────────────────┘
+  Splitter treats the entire table as one blob
+  or splits mid-row — headers detached from values.
+```
+
+```python
+from langchain.text_splitter import NLTKTextSplitter
+
+splitter = NLTKTextSplitter()
+chunks = splitter.split_text(document)
+```
+
+**When it works:** Clean prose documents — articles, knowledge base entries, documentation written in natural language. Paragraph-level splitting in particular respects the author's own semantic grouping.
+
+**Where it breaks:** Structured documents. A sentence splitter applied to a PDF export of a contract will happily split across table rows, numbered clauses, and section headers. The NLP boundary detection assumes well-formed prose — enterprise documents are rarely that.
+
+**The system implication:** Sentence/paragraph splitting is good enough for many internal knowledge base use cases. But if your corpus is heterogeneous — mix of PDFs, Word documents, wiki pages, code — you will need different strategies per document type. This is architecturally important: your chunking layer needs to be content-type-aware, not a single global splitter.
+
+---
+
+### 3. Recursive Character Splitting
+
+Split on a hierarchy of separators — paragraph breaks first, then sentence terminators, then whitespace — until chunks fall within the target size. This is LangChain's default `RecursiveCharacterTextSplitter` and it became the default for good reason.
+
+```
+Separator hierarchy (attempted in order, most preferred first):
+
+  Priority 1  →  "\n\n"   paragraph break        ← always try this first
+  Priority 2  →  "\n"     line break
+  Priority 3  →  ". "     sentence end
+  Priority 4  →  " "      word boundary
+  Priority 5  →  ""       character level         ← absolute last resort
+
+Example (chunk_size = 500 tokens):
+
+  ┌─────────────────────────────────────────────────────────┐
+  │ Paragraph A  (450t)  ──────────────────► fits  ✓        │
+  │                                                         │
+  │ Paragraph B  (600t)  ──► too big, try next separator    │
+  │   Sentence B1  (200t)  ─────────────────► fits  ✓      │
+  │   Sentence B2  (200t)  ─────────────────► fits  ✓      │
+  │   Sentence B3  (200t)  ─────────────────► fits  ✓      │
+  │                                                         │
+  │ Paragraph C  (480t)  ──────────────────► fits  ✓        │
+  └─────────────────────────────────────────────────────────┘
+
+  Result: 5 chunks of varying size, all ≤ 500 tokens,
+  each split at the most natural boundary available.
+```
+
+```python
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+
+splitter = RecursiveCharacterTextSplitter(
+    chunk_size=1000,
+    chunk_overlap=200,
+    separators=["\n\n", "\n", ". ", " ", ""]
+)
+chunks = splitter.split_text(document)
+```
+
+**When it works:** General-purpose ingest where you don't know your content type at design time, or where your corpus is mixed. It degrades gracefully — it prefers natural boundaries but falls back to character-level splitting only as a last resort.
+
+**Where it breaks:** The separator hierarchy is a heuristic. It doesn't understand document semantics — it doesn't know that `\n\n` in a code block is not a paragraph boundary. And because chunk sizes vary, your index is less predictable.
+
+**The system implication:** Recursive splitting is a sensible default for MVP and proof-of-concept. If you're building production systems, treat it as the baseline to beat — not the final answer.
+
+---
+
+### 4. Semantic Chunking
+
+Instead of splitting on structural heuristics, split on semantic similarity. Embed sentences sequentially and detect where the cosine similarity between adjacent sentences drops — that drop is a semantic boundary.
+
+```
+Sentences embedded and compared pairwise:
+
+  S1 ──► [embed] ──► v1 ─┐
+  S2 ──► [embed] ──► v2 ─┤── sim(v1,v2) = 0.91  same topic  ── NO SPLIT
+  S3 ──► [embed] ──► v3 ─┤── sim(v2,v3) = 0.88  same topic  ── NO SPLIT
+  S4 ──► [embed] ──► v4 ─┤── sim(v3,v4) = 0.43  topic shift ── SPLIT  ✂
+  S5 ──► [embed] ──► v5 ─┤── sim(v4,v5) = 0.87  same topic  ── NO SPLIT
+  S6 ──► [embed] ──► v6 ─┘── sim(v5,v6) = 0.39  topic shift ── SPLIT  ✂
+
+  ┌──────────────┐   ┌──────────────┐   ┌──────────────┐
+  │ S1 + S2 + S3 │   │  S4 + S5     │   │     S6       │
+  │  (coherent)  │   │  (coherent)  │   │  (coherent)  │
+  └──────────────┘   └──────────────┘   └──────────────┘
+
+  Cost at scale:
+  10,000 docs  ×  200 sentences  =  2,000,000 embed API calls at ingest.
+  vs. fixed-size:  10,000 docs  ×  ~20 chunks  =  200,000 calls.
+  Semantic chunking is 10× more expensive to ingest.
+```
+
+```python
+from langchain_experimental.text_splitter import SemanticChunker
+from langchain_openai.embeddings import OpenAIEmbeddings
+
+splitter = SemanticChunker(
+    OpenAIEmbeddings(),
+    breakpoint_threshold_type="percentile",
+    breakpoint_threshold_amount=95
+)
+chunks = splitter.split_text(document)
+```
+
+**When it works:** Long, complex documents where paragraph boundaries don't cleanly correspond to topic shifts — analyst reports, research papers, legal briefs. The resulting chunks are highly semantically coherent and produce excellent retrieval embeddings.
+
+**Where it breaks:** It's expensive. Each document requires N embedding calls at ingest time (where N is the number of sentences), not just one at retrieval time. At scale, this is a significant infrastructure cost. It also introduces a dependency on your embedding model's behavior at ingest — if you change models, you may need to rechunk.
+
+**The system implication:** Semantic chunking is appropriate when retrieval quality directly drives business value — customer-facing search, compliance document analysis, high-stakes question answering — and you have the compute budget at ingest time. It is not appropriate as a default strategy for high-volume pipelines.
+
+---
+
+### 5. Document-Structure-Aware Chunking
+
+Parse the document's structural elements — headings, subheadings, tables, lists, code blocks, footnotes — and use those as chunk boundaries. The chunk carries both the content and its structural context.
+
+```
+PDF parsed into typed structural elements:
+
+  ┌──────────────────────────────────────────────────────────────────┐
+  │  Raw PDF                         Parsed element stream           │
+  │                                                                  │
+  │  Vendor Agreement           →    [Title]    "Vendor Agreement"   │
+  │  ─────────────────               [Heading]  "1. Scope"           │
+  │  1. Scope                        [Text]     "This agreement..."  │
+  │  This agreement covers all  →    [Heading]  "4. Liability"       │
+  │  services provided by...         [Text]     "Capped at $500K..." │
+  │                                  [Table]    vendor|cap|renewal   │
+  │  4. Liability                                Acme  |0.5 |Auto    │
+  │  Liability is capped at     →    [Heading]  "7. Termination"     │
+  │  $500K per incident...           [Text]     "Either party..."    │
+  │                                                                  │
+  │  ┌───────────────────┐                                           │
+  │  │Vendor│ Cap │Renew │  →  Chunk for Section 4:                  │
+  │  │──────┼─────┼──────│    ┌───────────────────────────────┐     │
+  │  │Acme  │ 0.5 │ Auto │    │ source:  vendor-agreement.pdf │     │
+  │  └───────────────────┘    │ section: "4. Liability"        │     │
+  │                           │ type:    NarrativeText          │     │
+  │                           │ content: "Capped at $500K..."  │     │
+  │                           └───────────────────────────────┘     │
+  └──────────────────────────────────────────────────────────────────┘
+```
+
+```python
+from langchain.document_loaders import UnstructuredPDFLoader
+
+loader = UnstructuredPDFLoader("contract.pdf", mode="elements")
+elements = loader.load()
+# Elements carry type metadata: Title, NarrativeText, Table, ListItem, etc.
+```
+
+**When it works:** Enterprise document corpora. Contracts, policies, technical specifications, product documentation. These documents are organized around their structure — a retrieved section from "Section 4.2 Liability Caps" is fundamentally more useful than a retrieved section from an anonymous 512-token window.
+
+**Where it breaks:** Document structure parsing is hard and brittle. PDF structure is particularly problematic — multi-column layouts, scanned content, embedded tables, and inconsistent heading styles all degrade parse quality. A bad parse produces worse chunks than a naive text splitter.
+
+**The system implication:** Structure-aware chunking requires investment in your document processing pipeline — good PDF/DOCX parsers, element classification, structure validation. Tools like Unstructured.io, Azure Document Intelligence, or AWS Textract make this more tractable, but it is still the most infrastructure-heavy approach on this list. For enterprise document use cases, it is usually worth it.
+
+---
+
+### 6. Hierarchical / Parent-Child Indexing
+
+This is the pattern that distinguishes serious enterprise RAG implementations from prototypes.
+
+The insight is that retrieval precision and answer quality have opposing preferences. Retrieval prefers small, dense, focused chunks — they embed cleanly and rank accurately. The LLM prefers large context windows — more surrounding text means better answers. Hierarchical indexing gives you both.
+
+```
+Document section (~2000 tokens):
+
+┌────────────────────────────────────────────────────────────────────┐
+│   PARENT CHUNK   (stored in doc store, NOT the vector store)       │
+│                                                                    │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐             │
+│  │ CHILD  ch-1  │  │ CHILD  ch-2  │  │ CHILD  ch-3  │             │
+│  │  ~400 tokens │  │  ~400 tokens │  │  ~400 tokens │             │
+│  │  [embedded]  │  │  [embedded]  │  │  [embedded]  │             │
+│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘             │
+│         │                 │                  │                     │
+│         └─────────────────┴──────────────────┘                    │
+│                     linked to parent_id                            │
+└────────────────────────────────────────────────────────────────────┘
+
+Query flow:
+
+  User query
+      │
+      ▼ embed
+  Vector store search ──► child ch-2  matched  (high precision)
+                                │
+                                │ look up parent_id
+                                ▼
+                          Return PARENT chunk       (rich context)
+                                │
+                                ▼
+                         LLM generates answer
+
+  You get:
+  ✓  Retrieval precision  of  ~400-token child chunks
+  ✓  Answer quality       of  ~2000-token parent context
+```
+
+```python
+from langchain.retrievers import ParentDocumentRetriever
+from langchain.storage import InMemoryStore
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+
+parent_splitter = RecursiveCharacterTextSplitter(chunk_size=2000)
+child_splitter  = RecursiveCharacterTextSplitter(chunk_size=400)
+
+vectorstore = Chroma(embedding_function=embeddings)
+store = InMemoryStore()
+
+retriever = ParentDocumentRetriever(
+    vectorstore=vectorstore,
+    docstore=store,
+    child_splitter=child_splitter,
+    parent_splitter=parent_splitter,
+)
+```
+
+**When it works:** Almost everywhere in enterprise RAG. It's strictly better than single-level chunking in most cases — you get the retrieval precision of small chunks without sacrificing the answer quality that comes from large context.
+
+**Where it breaks:** Storage cost doubles (you're storing both levels). The parent-child relationship requires a document store in addition to your vector store. And if your parent chunks are too large, you reintroduce the LLM's context window constraints.
+
+**The system implication:** Design your parent chunk size based on your LLM's optimal context size for the query type — not based on what feels intuitively right. For factual lookups, parents of 500–800 tokens work well. For synthesis queries, parents of 1500–2000 tokens are more appropriate.
+
+---
+
+## The Hidden Variables Most Articles Skip
+
+### Overlap Is a Tax, Not a Feature
+
+Chunk overlap is commonly presented as a safety mechanism — "a bit of overlap preserves context at boundaries." That's true, but most teams set overlap by feel rather than by analysis.
+
+```
+Corpus: 10,000,000 tokens   chunk_size: 512   overlap: 20% (102 tokens)
+
+  Without overlap:   ~19,531 chunks  ×  512t  =  10.0M indexed tokens
+  With 20% overlap:  ~19,531 chunks  ×  614t  =  12.0M indexed tokens
+                                                  ──────────────────
+                                                  +2M tokens overhead
+                                                  +10% retrieval cost
+                                                  +10% storage cost
+
+The hidden cost — what overlap does to your top-K results:
+
+  Retrieved (top-K = 5):
+  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐
+  │ chunk_47 │  │ chunk_48 │  │ chunk_51 │  │ chunk_23 │  │ chunk_89 │
+  └──────────┘  └──────────┘  └──────────┘  └──────────┘  └──────────┘
+      ░░░░░░░░░░░░░░
+      ↑ chunk_47 and chunk_48 share 102 overlapping tokens
+        → only 3.8 unique context slots out of 5 delivered to LLM
+        → you paid for 5 retrieval slots, got 3.8 unique content slots
+```
+
+Overlap is appropriate when your queries frequently match content near chunk boundaries. If your retrieval logs show you're rarely hitting boundary cases, you can reduce overlap and improve index efficiency. Instrument this.
+
+### Chunk Size vs. Embedding Model Context Window
+
+Many teams don't realize that their embedding model has a maximum context length, and that exceeding it silently truncates the chunk during embedding. The resulting embedding represents a truncated version of the chunk — retrieval quality degrades without any visible error.
+
+```
+Common embedding model limits:
+
+  Model                           Max tokens   chunk_size=1024?
+  ──────────────────────────────  ──────────   ───────────────────────
+  OpenAI text-embedding-3-small      8,191     Safe
+  OpenAI text-embedding-ada-002      8,191     Safe
+  Cohere embed-english-v3.0            512     ⚠ DANGER — silent truncation
+  BGE-large-en                         512     ⚠ DANGER — silent truncation
+  E5-large-v2                          512     ⚠ DANGER — silent truncation
+  Voyage-large-2                    16,000     Safe
+
+What silent truncation looks like:
+
+  Your chunk  (1024 tokens)
+  ┌────────────────────────────┬──────────────────────┐
+  │   embedded  (512 tokens)   │   SILENTLY DROPPED   │
+  └────────────────────────────┴──────────────────────┘
+        ↑
+  The embedding represents only half your chunk.
+  No error thrown. Retrieval degrades invisibly.
+```
+
+### Multi-Modal and Structured Content Breaks Everything
+
+Tables, code blocks, mathematical notation, and embedded images are not prose. Text-centric chunking strategies applied to these content types produce degraded or meaningless chunks.
+
+```
+The table-splitting failure:
+
+  Document snippet:
+  ┌──────────────────────────────────────────────────────────┐
+  │  The following vendors are approved for Q1 2025:         │
+  │                                                          │
+  │  Vendor      │  Cap ($M)  │  Renewal  │  SLA            │
+  │  ────────────┼────────────┼───────────┼──────           │
+  │  Acme Corp   │  0.5       │  Auto     │  99.9%          │
+  │  BetaCo      │  2.0       │  Manual   │  99.5%          │
+  │  GammaSvc    │  1.0       │  Auto     │  99.0%          │
+  └──────────────────────────────────────────────────────────┘
+
+  Fixed-size boundary falls mid-table:
+
+  Chunk N:                           Chunk N+1:
+  ┌────────────────────────────┐     ┌────────────────────────────┐
+  │ ...approved for Q1 2025    │     │ BetaCo │ 2.0 │ Manual ...  │
+  │ Vendor │ Cap │ Renewal │   │     │ GammaSvc│1.0 │ Auto ...    │
+  │ Acme   │ 0.5 │ Auto    │   │     └────────────────────────────┘
+  └────────────────────────────┘      ↑ No column headers.
+                                        LLM cannot interpret this.
+
+  Correct approach: extract table as a single atomic unit:
+
+  {
+    "type": "table",
+    "caption": "Approved vendors Q1 2025",
+    "rows": [
+      {"Vendor": "Acme Corp", "Cap": "0.5M", "Renewal": "Auto"},
+      {"Vendor": "BetaCo",    "Cap": "2.0M", "Renewal": "Manual"},
+      {"Vendor": "GammaSvc",  "Cap": "1.0M", "Renewal": "Auto"}
+    ]
+  }
+  Headers travel with every row. Context is always preserved.
+```
+
+```python
+# Serialize a table for embedding — preserve structural context
+def serialize_table(table):
+    rows = []
+    headers = [cell.text for cell in table.rows[0].cells]
+    for row in table.rows[1:]:
+        cells = [cell.text for cell in row.cells]
+        row_text = "; ".join(f"{h}: {v}" for h, v in zip(headers, cells))
+        rows.append(row_text)
+    return "\n".join(rows)
+```
+
+Code blocks should be chunked at semantic code boundaries — function definitions, class declarations — not at arbitrary token counts. An AST-based splitter (available in LangChain for several languages) will respect these boundaries.
+
+### Metadata Enrichment at Chunk Time
+
+This is the highest-leverage optimization most teams add too late.
+
+```
+Same content — very different retrieval value:
+
+  WITHOUT metadata:                   WITH metadata:
+  ┌──────────────────────────────┐    ┌──────────────────────────────────┐
+  │                              │    │ source:   vendor-agreement.pdf   │
+  │ "Liability is capped at      │    │ section:  "4.2 Liability Caps"   │
+  │  $500K per incident for all  │    │ doc_type: contract               │
+  │  Acme Corp services under    │    │ entities: ["Acme Corp", "$500K"] │
+  │  this agreement."            │    │ date:     2025-01-15             │
+  │                              │    ├──────────────────────────────────┤
+  └──────────────────────────────┘    │ "Liability is capped at $500K   │
+                                      │  per incident for all Acme Corp  │
+  Query: "Acme liability cap"         │  services under this agreement." │
+  → maybe found, no filter possible   └──────────────────────────────────┘
+
+                                      Query: "Acme liability cap"
+                                      Filter: doc_type=contract
+                                           AND entity="Acme Corp"
+                                      → precise, filtered, always found
+```
+
+```python
+chunk = {
+    "content": "...",
+    "metadata": {
+        "source": "vendor-agreement-2025.pdf",
+        "section": "Section 4.2 – Liability",
+        "document_type": "contract",
+        "entity_mentions": ["Acme Corp", "liability cap", "indemnification"],
+        "created_date": "2025-01-15"
+    }
+}
+```
+
+The cost of not doing this at chunk time is that you have to re-process your entire corpus later to add it. Design your metadata schema before your first ingest run.
+
+### Chunking Strategy Is a Function of Query Type
+
+This is the insight that most changes how architects think about chunking: your optimal chunk geometry depends on how users will query your system, not on how your documents are structured.
+
+```
+  Query type              Optimal chunk       Why
+  ─────────────────────   ────────────────    ────────────────────────────
+  Factual lookup          Small 256–512t      Answer is localized. LLM
+  "What is Acme's         + hierarchical      needs little context.
+   liability cap?"        parent for          Precise match > broad match.
+                          context delivery
+
+  Summarization           Large 1000–1500t    LLM needs material to
+  "Summarize key risks    or full-section     synthesize from. Broad
+   in the agreement"      retrieval           match > precise match.
+
+  Multi-hop reasoning     Structured          Pure vector search
+  "Which vendors have     retrieval hybrid    struggles with logical
+   cap < $1M AND          (vector + metadata  joins across chunks.
+   auto-renewal?"         filter or graph)    Consider query routing.
+
+  ──────────────────────────────────────────────────────────────────────
+  If your system serves multiple query types →
+  multiple indexes + query classifier routing at retrieval time.
+```
+
+**Factual lookups** prefer small, precise chunks. The relevant answer is localized and the LLM doesn't need much surrounding context.
+
+**Summarization queries** prefer large chunks or full-document retrieval. You need to give the LLM enough material to synthesize from.
+
+**Multi-hop reasoning** requires either very large chunks or a structured retrieval approach that goes beyond pure vector search.
+
+---
+
+## A Framework for Choosing Your Strategy
+
+Before your next design review, run through these three questions in order:
+
+```
+┌──────────────────────────────────────────────────────────────────────┐
+│            CHUNKING STRATEGY DECISION FRAMEWORK                      │
+└──────────────────────────────────────────────────────────────────────┘
+
+Q1: What is your PRIMARY content type?
+│
+├── Prose  (articles, KB, reports)
+│       │
+│       ├── Q2: Primary query pattern?
+│       │       ├── Factual    →  Semantic chunking  +  hierarchical index
+│       │       └── Synthesis  →  Recursive split    +  large parents
+│       │
+│       └── Q3: Ingest budget?
+│               ├── High  →  Semantic chunking   (expensive, high precision)
+│               └── Low   →  Recursive splitting (cheap, good default)
+│
+├── Structured docs  (contracts, specs, policies, manuals)
+│       │
+│       └──  Structure-aware  +  hierarchical index
+│            +  rich metadata  (section, entity, date, doc_type)
+│
+├── Code
+│       │
+│       ├── Function / class level  →  AST-based splitter
+│       └── File level              →  Recursive split, large chunk_size
+│
+└── Mixed corpus
+        │
+        └──  Per-document-type routing pipeline
+             ┌──────────────┐
+             │  doc router  │──► .pdf        →  Structure-aware
+             │              │──► .md / .txt  →  Recursive split
+             │              │──► .py / .ts   →  AST-based
+             │              │──► .csv / .xl  →  Row-as-chunk
+             └──────────────┘
+             All routes feed a single unified vector store.
+```
+
+The answer to all three questions together determines your strategy. A compliance document search system with factual query patterns and a high quality budget calls for structure-aware chunking + hierarchical indexing + rich metadata. A high-volume customer support knowledge base with mixed queries and a constrained ingest budget calls for recursive splitting + parent-child retrieval + metadata from your CMS.
+
+---
+
+## Production Considerations
+
+### Chunking Is Not a One-Time Decision
+
+Your corpus evolves. New document types get added. Users start asking questions that your current chunk geometry handles poorly. Retrieval quality drifts.
+
+```
+What forces a re-index:
+
+  Change                           Consequence
+  ─────────────────────────────    ─────────────────────────────────────
+  New document type added          New routing rule needed  →  re-index
+  Embedding model upgraded         Embedding space shifts   →  full re-index
+  Chunk size found suboptimal      Retrieval degrades       →  full re-index
+  Metadata schema extended         Missing on old chunks    →  partial re-index
+  Query patterns shift             Chunk geometry wrong     →  re-index subset
+
+Design your pipeline for re-indexing from day one:
+
+  Raw docs                         ← keep originals, immutable (S3 / blob)
+       │
+       ▼
+  Chunking config (versioned)      ← strategy as code, not a one-off script
+       │
+       ▼
+  Chunk store                      ← separate from vector store
+       │
+       ▼
+  Vector store                     ← fully rebuildable from chunk store
+```
+
+The teams that treat chunking as a fixed preprocessing step discover this the hard way when a product requirement changes and they have to re-process six months of indexed content.
+
+### Evaluate End-to-End, Not in Isolation
+
+Chunk quality is not measurable by looking at chunks. It's only measurable by looking at retrieval quality, and retrieval quality is only measurable by looking at end-to-end answer quality on real queries.
+
+```
+The only comparison that matters:
+
+  Config A  →  Retrieval  →  LLM  →  Answer  →  correctness score A
+  Config B  →  Retrieval  →  LLM  →  Answer  →  correctness score B
+                                                       ▲
+                                                  compare these
+
+  Proxy metrics that feel useful but mislead:
+  ✗  Intra-chunk similarity  (high coherence ≠ good retrieval)
+  ✗  Chunk size variance     (consistency ≠ quality)
+  ✗  Embedding norm          (noisy proxy)
+
+  Metrics that actually matter (against real user query sets):
+  ✓  Context precision    — are retrieved chunks relevant?
+  ✓  Context recall       — is the answer grounded in chunks?
+  ✓  Answer correctness   — is the final answer right?
+  ✓  Answer faithfulness  — does the LLM hallucinate beyond context?
+
+  Tools: RAGAS, TruLens, or a custom eval harness
+         with labeled QA pairs from real user queries.
+```
+
+### Hybrid Strategies in Real Systems
+
+In production, you will almost never use a single chunking strategy across your entire corpus.
+
+```
+Realistic enterprise RAG ingest architecture:
+
+  ┌──────────────┐
+  │ Document     │
+  │ Router       │──► PDF / scanned  →  Structure-aware + table extraction
+  │              │                             │
+  │              │──► DOCX / MD      →  Recursive split                  │
+  │              │                             │                          │
+  │              │──► .py / .ts      →  AST-based split                  │
+  │              │                             │                          │
+  │              │──► .csv / .xlsx   →  Row-as-chunk                     │
+  └──────────────┘                             │                          │
+                           all routes ─────────┴──────────────────────────┤
+                                                                           ▼
+                                                              ┌────────────────────┐
+                                                              │    Vector Store     │
+                                                              │  (unified index)    │
+                                                              └──────────┬─────────┘
+                                                                         │
+                                                              ┌──────────▼─────────┐
+                                                              │   Retrieval API     │
+                                                              └──────────┬─────────┘
+                                                                         │
+                                                              ┌──────────▼─────────┐
+                                                              │        LLM          │
+                                                              └─────────────────────┘
+```
+
+Design for this heterogeneity from the start. Your chunking layer should be a configurable pipeline with per-document-type routing, not a single function called on everything.
+
+---
+
+## The Architecture Principle
+
+Here is the principle worth writing on a whiteboard in your design session:
+
+**Chunking strategy should be driven by how your users query, not by how your documents are structured.**
+
+Your documents' structure is an input to the problem. Your users' query patterns are the constraint you're optimizing for. The best chunk geometry for your system is the one that surfaces the most relevant, complete, and contextually sufficient unit of information for the queries your system actually receives.
+
+```
+Strategy comparison at a glance:
+
+  Strategy             Semantic    Ingest    Index       Best for
+                       Fidelity    Cost      Density
+  ───────────────────  ─────────   ───────   ─────────   ───────────────────────────
+  Fixed-size           Low         Minimal   High        Logs, feeds, homogeneous
+  Sentence / Para      Medium      Low       Medium      Clean prose, internal KB
+  Recursive split      Medium      Low       Medium      Mixed corpora, MVP / PoC
+  Semantic             High        High      Low         Reports, research, legal
+  Structure-aware      High        Medium    Low         Enterprise PDFs, contracts
+  Hierarchical         High        Medium    Both        Production RAG, most cases
+```
+
+Get chunking right and you've done most of the hard work in building a RAG system that actually works in production. Get it wrong and you'll be debugging retrieval failures for months, convinced the problem is somewhere else.
+
+---
+
+*If you found this useful, I write regularly on enterprise system design, solution architecture, and production AI systems. You can find more at [lakshyatangri.com](https://lakshyatangri.com).*

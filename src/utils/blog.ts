@@ -15,6 +15,21 @@ export function calculateReadTime(text: string | undefined): number {
 }
 
 /**
+ * Normalize category string (e.g., "fintech" -> "Fintech", "FinTech" -> "Fintech")
+ * Ensures consistent categorization regardless of frontmatter case.
+ */
+export function normalizeCategory(category: string | undefined): string {
+  if (!category) return 'General'
+  const trimmed = category.trim()
+  if (!trimmed) return 'General'
+
+  return trimmed.split(/\s+/).map(word =>
+    word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+  ).join(' ')
+}
+
+
+/**
  * Get related posts based on category
  */
 export function getRelatedPosts(
@@ -23,8 +38,10 @@ export function getRelatedPosts(
   currentCategory: string,
   limit: number = 3
 ): CollectionEntry<'blog'>[] {
+  const normalizedCurrent = normalizeCategory(currentCategory)
+
   // First try to get posts from same category
-  const sameCategoryPosts = posts.filter(post => post.data.category === currentCategory && post.id !== currentSlug)
+  const sameCategoryPosts = posts.filter(post => normalizeCategory(post.data.category) === normalizedCurrent && post.id !== currentSlug)
 
   // If we have enough posts from same category, use them
   if (sameCategoryPosts.length >= limit) {
@@ -32,7 +49,7 @@ export function getRelatedPosts(
   }
 
   // If not enough posts from same category, fill with other posts
-  const otherPosts = posts.filter(post => post.data.category !== currentCategory && post.id !== currentSlug)
+  const otherPosts = posts.filter(post => normalizeCategory(post.data.category) !== normalizedCurrent && post.id !== currentSlug)
 
   return [...sameCategoryPosts, ...otherPosts].slice(0, limit)
 }
