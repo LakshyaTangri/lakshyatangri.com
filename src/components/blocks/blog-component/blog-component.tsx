@@ -36,6 +36,7 @@ export type BlogPost = {
 
 interface BlogProps {
   blogData?: BlogPost[]
+  hideFeatured?: boolean
 }
 
 const BlogGrid = ({ posts, onCategoryClick }: { posts: BlogPost[]; onCategoryClick: (category: string) => void }) => {
@@ -101,16 +102,12 @@ const BlogGrid = ({ posts, onCategoryClick }: { posts: BlogPost[]; onCategoryCli
   )
 }
 
-const Blog = ({ blogData = [] }: BlogProps) => {
+const Blog = ({ blogData = [], hideFeatured = true }: BlogProps) => {
   const [selectedTab, setSelectedTab] = useState('All')
   const [searchQuery, setSearchQuery] = useState('')
 
-  // Filter out featured posts to avoid duplication with hero section
-  // Sort posts by ID in descending order (newest first)
-  const nonFeaturedPosts = blogData.filter(post => !post.featured).sort((a, b) => b.id - a.id)
-
-  // Dynamically generate categories from the available data
-  const uniqueCategories = [...new Set(nonFeaturedPosts.map(post => post.category))]
+  // Dynamically generate categories from ALL available data
+  const uniqueCategories = [...new Set(blogData.map(post => post.category))]
   const categories = ['All', ...uniqueCategories.sort()]
 
   const handleTabChange = (tab: string) => {
@@ -121,14 +118,22 @@ const Blog = ({ blogData = [] }: BlogProps) => {
     }
   }
 
-  // Filter posts by search query (case-insensitive on title, description, category)
-  const searchFilteredPosts = nonFeaturedPosts.filter(post => {
-    if (!searchQuery) return true;
-    const q = searchQuery.toLowerCase();
-    return post.title.toLowerCase().includes(q) ||
-           post.description.toLowerCase().includes(q) ||
-           post.category.toLowerCase().includes(q);
-  });
+  // Helper to filter and sort posts based on the search query
+  const getDisplayPosts = (posts: BlogPost[]) => {
+    let filtered = posts;
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      filtered = filtered.filter(post =>
+        post.title.toLowerCase().includes(q) ||
+        post.description.toLowerCase().includes(q) ||
+        post.category.toLowerCase().includes(q)
+      );
+    }
+    return filtered.sort((a, b) => b.id - a.id);
+  }
+
+  // For the "All" tab, hide featured posts if requested to avoid hero duplication
+  const allTabPosts = hideFeatured ? blogData.filter(post => !post.featured) : blogData;
 
   return (
     <section className='py-8 sm:py-16 lg:py-24' id='categories'>
@@ -195,14 +200,14 @@ const Blog = ({ blogData = [] }: BlogProps) => {
 
           {/* All Posts Tab */}
           <TabsContent value='All'>
-            <BlogGrid posts={searchFilteredPosts} onCategoryClick={handleTabChange} />
+            <BlogGrid posts={getDisplayPosts(allTabPosts)} onCategoryClick={handleTabChange} />
           </TabsContent>
 
           {/* Category-specific Tabs */}
           {categories.slice(1).map((category, index) => (
             <TabsContent key={index} value={category}>
               <BlogGrid
-                posts={searchFilteredPosts.filter(post => post.category === category)}
+                posts={getDisplayPosts(blogData.filter(post => post.category === category))}
                 onCategoryClick={handleTabChange}
               />
             </TabsContent>

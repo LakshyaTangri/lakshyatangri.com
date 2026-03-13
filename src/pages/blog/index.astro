@@ -4,7 +4,6 @@ import { getCollection } from 'astro:content'
 import { normalizeCategory } from '@/utils/blog'
 
 import Blog from '@/components/blocks/blog-component/blog-component'
-import CTA from '@/components/blocks/cta-section/cta-section'
 
 // Get all blog posts and convert to the format expected by components
 const allPosts = await getCollection('blog')
@@ -48,7 +47,6 @@ const schema = {
 
 <Layout title={pageTitle} description={pageDescription} schema={schema}>
   <main class='flex flex-col pt-16 md:pt-24'>
-    <Blog blogData={allBlogPosts} client:load />
-    <CTA />
+    <Blog blogData={allBlogPosts} hideFeatured={false} client:load />
   </main>
 </Layout>

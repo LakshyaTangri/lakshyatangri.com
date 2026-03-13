@@ -8,7 +8,6 @@ import ProfessionalJourney from '@/components/blocks/about/professional-journey'
 import ArchitecturalPhilosophy from '@/components/blocks/about/architectural-philosophy'
 import BlogCoverage from '@/components/blocks/about/blog-coverage'
 import Blog from '@/components/blocks/blog-component/blog-component'
-import CTA from '@/components/blocks/cta-section/cta-section'
 
 // Get all blog posts and convert to the format expected by components
 const allPosts = await getCollection('blog')
@@ -66,5 +65,4 @@ const schema = {
   <ProfessionalJourney client:load />
   <BlogCoverage client:load />
   <Blog blogData={allBlogPosts} client:load />
-  <CTA />
 </Layout>
