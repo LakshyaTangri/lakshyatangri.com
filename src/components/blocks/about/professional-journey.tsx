@@ -5,7 +5,7 @@ const roles = [
     {
         title: 'Data Management Consultant',
         company: 'CGI Defence & Space Intelligence',
-        location: 'London',
+        location: 'CGI Defence Contract',
         description: 'Operated at the enterprise transformation layer — advising defence clients on data strategy, AI governance, and target-state architecture.',
         achievements: [
             'Defined enterprise data architectures reducing decision latency by 35%',
