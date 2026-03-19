@@ -6,7 +6,7 @@ const ArchitecturalPhilosophy = () => {
                     <div className='max-w-3xl flex flex-col gap-4'>
                         <h2 className='text-3xl font-semibold tracking-tight sm:text-4xl'>Architectural Philosophy</h2>
                         <p className='text-lg text-muted-foreground'>
-                            Architecting Enterprise Scale programmes and delivering across all levels of stakeholders — C-level, Portfolio, and Projects. My work spans Business, Data, Application (Information systems), and Technology domains, combining TOGAF 10 discipline with hands-on technical execution.
+                            Architecting Enterprise Scale programmes and delivering across all levels of stakeholders — C-level, Portfolio, and Projects. My work spans Business, Data, Application (Information systems), and Technology domains.
                         </p>
                     </div>
 

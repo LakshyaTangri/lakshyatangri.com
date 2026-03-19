@@ -28,7 +28,7 @@ const HeroSection = ({ blogData }: { blogData: BlogPost[] }) => {
             </h1>
 
             <p className='text-muted-foreground max-w-2xl text-lg sm:text-xl leading-relaxed'>
-              I design and govern target-state architectures for mission-critical platforms. As a TOGAF 10-certified Enterprise Architect, I combine hands-on technical depth in cloud, AI, and data systems with board-level fluency in governance, risk, and technology strategy.
+              I design and govern target-state architectures for mission-critical platforms, combining hands-on technical depth in cloud, AI, and data systems with board-level fluency in governance, risk, and regulatory compliance.
             </p>
 
             <div className='mt-2 flex flex-wrap gap-2.5'>

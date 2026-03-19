@@ -13,7 +13,7 @@ const roles = [
             'Led horizon scanning for emerging AI and data technologies',
             'Reduced decision latency by 35% through TOGAF ADM governance'
         ],
-        impact: 'Strengthened mission-critical platform governance and shifted institutional decision-making at scale within the UK MOD.'
+        impact: 'Produced target-state enterprise architecture that unblocked stalled investment across the programme portfolio and shifted institutional decision-making at scale.'
     },
     {
         title: 'Solution Architect',
@@ -26,20 +26,20 @@ const roles = [
             'Awarded Excellence in Digital Transformation (2024)',
             'Implemented autonomous governance agents for data-driven policy decisions'
         ],
-        impact: 'Demonstrated how autonomous governance, embedded inside structured architecture, becomes a powerful institutional capability.'
+        impact: 'Recognised for implementing autonomous governance agents enabling auditable, data-driven policy decisions across government departments.'
     },
     {
-        title: 'Business Architect',
-        company: 'Glyphr Tech (SaaS)',
+        title: 'Business Architect - Financial Systems & Governance',
+        company: 'Glyphr Tech Pvt Ltd (HRIS & Payroll SaaS)',
         location: 'India',
-        description: 'Translated business strategy into application and integration architecture for an enterprise-scale Payroll & HRIS SaaS platform.',
+        description: 'Translated business strategy into application and integration architecture for an enterprise-scale cloud Payroll and HRIS SaaS platform.',
         achievements: [
             'Defined capability roadmaps serving 80+ enterprise clients',
-            'Governed architecture for payroll systems handling 50,000+ monthly transactions',
-            'Led vendor management and alignment with regulatory requirements',
-            'Strengthened platform scalability and operational resilience'
+            'Governed application, data, and systems integration architecture for 50,000+ monthly transactions',
+            'Led vendor management and evaluation of third-party payroll and cloud providers',
+            'Strengthened platform scalability, auditability, and operational resilience'
         ],
-        impact: 'Deepened expertise in translating complex regulatory requirements into scalable, auditable, and resilient cloud architectures.'
+        impact: 'Focused on strengthening platform scalability, auditability, and operational resilience in an Agile delivery environment.'
     },
     {
         title: 'Software Developer & IT Consultant',
@@ -47,12 +47,12 @@ const roles = [
         location: 'India',
         description: 'Managed consulting architecture engagements for 50+ SME clients across retail, finance, and e-commerce.',
         achievements: [
-            'Produced technology roadmaps and architecture assessments for SME clients',
+            'Produced technology roadmaps and architecture assessments for clients',
             'Owned commercial governance of £500K+ in consulting engagements',
-            'Evaluated and managed third-party vendors for cloud and API services',
+            'Evaluated and managed third-party vendors for cloud, API, and infrastructure services',
             'Aligned architecture decisions with client risk appetite and budget'
         ],
-        impact: 'Cemented the ability to architect from first principles and translate business ambiguity into structured technical roadmaps.'
+        impact: 'Governed systems integration, cloud platform design, and vendor architecture decisions from requirements through to deployment.'
     }
 ]
 

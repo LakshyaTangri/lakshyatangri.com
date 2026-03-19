@@ -1,20 +1,24 @@
 // Site Configuration
 // Centralized configuration for site metadata, SEO, and branding
 
-export const SITE_TITLE = 'Lakshya Tangri | Enterprise, Solution & Functional Architect'
+export const SITE_TITLE = 'Lakshya Tangri | Enterprise Architect - Solution Architect - Consulting'
 export const SITE_DESCRIPTION =
-  'I design and govern target-state architectures for mission-critical platforms. TOGAF 10-certified Enterprise Architect specializing in technology strategy, digital transformation, and AI/Data systems across Defence, Government, and Finance.'
+  'TOGAF 10-certified Enterprise Architect with a career built progressively from software development and business architecture to enterprise-scale programme delivery and technology strategy.'
 
 export const GITHUB_URL = 'https://github.com/lakshyatangri'
 export const SITE_URL = 'https://lakshyatangri.com/' // Replace with actual URL
 
 export const SITE_METADATA = {
+  title: {
+    default: SITE_TITLE,
+    template: `%s | Lakshya Tangri`
+  },
   description:
-    'I design and govern target-state architectures for mission-critical platforms. TOGAF 10-certified Enterprise Architect specializing in technology strategy, digital transformation, and AI/Data systems across Defence, Government, and Finance.',
+    'TOGAF 10-certified Enterprise Architect with a career built progressively from software development and business architecture to enterprise-scale programme delivery and technology strategy.',
   keywords: [
     'Enterprise Architect',
     'Solution Architect',
-    'Functional Architect',
+    'Consulting',
     'TOGAF 10',
     'Technology Strategy',
     'Digital Transformation',
@@ -25,7 +29,6 @@ export const SITE_METADATA = {
     'ArchiMate 3',
     'Business Capability Mapping',
     'Target Operating Model',
-    'Responsible AI',
     'Architecture Governance'
   ],
   authors: [{ name: 'Lakshya Tangri', url: SITE_URL }],
@@ -41,9 +44,9 @@ export const SITE_METADATA = {
     type: 'website',
     locale: 'en_GB',
     siteName: 'Lakshya Tangri',
-    title: 'Lakshya Tangri | Enterprise, Solution & Functional Architect',
+    title: 'Lakshya Tangri | Enterprise Architect - Solution Architect - Consulting',
     description:
-      'I design and govern target-state architectures for mission-critical platforms. TOGAF 10-certified Enterprise Architect specializing in technology strategy, digital transformation, and AI/Data systems across Defence, Government, and Finance.',
+      'TOGAF 10-certified Enterprise Architect specializing in enterprise-scale programme delivery and technology strategy across defence, government, and financial services.',
     images: [
       {
         url: '/images/og-image.png',
@@ -58,9 +61,9 @@ export const SITE_METADATA = {
     card: 'summary_large_image',
     site: '@lakshyatangri',
     creator: '@lakshyatangri',
-    title: 'Lakshya Tangri | Enterprise, Solution & Functional Architect',
+    title: 'Lakshya Tangri | Enterprise Architect - Solution Architect - Consulting',
     description:
-      'I design and govern target-state architectures for mission-critical platforms. TOGAF 10-certified Enterprise Architect specializing in technology strategy, digital transformation, and AI/Data systems across Defence, Government, and Finance.',
+      'TOGAF 10-certified Enterprise Architect specializing in enterprise-scale programme delivery and technology strategy across defence, government, and financial services.',
     images: ['/images/og-image.png']
   },
   verification: {
@@ -94,7 +97,7 @@ export const COMPANY_INFO = {
   contactPoint: {
     telephone: '',
     contactType: 'professional inquiry',
-    email: 'info@lakshyatangri.com'
+    email: 'lakshyatangri1@gmail.com'
   },
   sameAs: Object.values(SOCIAL_LINKS)
 }
