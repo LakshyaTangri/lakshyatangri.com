@@ -4,33 +4,33 @@ import { ServerIcon, CpuIcon, CloudIcon, ShieldCheckIcon, PresentationIcon, Layo
 const topics = [
     {
         icon: <LayoutTemplateIcon className="h-6 w-6 text-primary" />,
-        title: 'High-Level System Design',
-        description: 'Applying the RESHADED framework to translate ambiguity into structured design.'
-    },
-    {
-        icon: <CpuIcon className="h-6 w-6 text-primary" />,
-        title: 'Enterprise GenAI Architecture',
-        description: 'Patterns for implementing GenAI securely within organizational boundaries.'
-    },
-    {
-        icon: <CloudIcon className="h-6 w-6 text-primary" />,
-        title: 'Cloud-Native AWS Blueprints',
-        description: 'Creating scalable, event-driven architectures on Amazon Web Services.'
-    },
-    {
-        icon: <ServerIcon className="h-6 w-6 text-primary" />,
-        title: 'MLOps & Agent Orchestration',
-        description: 'Operationalizing autonomous AI agents and machine learning pipelines.'
-    },
-    {
-        icon: <ShieldCheckIcon className="h-6 w-6 text-primary" />,
-        title: 'Governance & Operating Models',
-        description: 'Architecting for compliance, auditability, and strategic oversight.'
+        title: 'Enterprise Architecture',
+        description: 'Applying TOGAF 10 and ArchiMate to design resilient, target-state enterprise systems.'
     },
     {
         icon: <PresentationIcon className="h-6 w-6 text-primary" />,
-        title: 'Strategic Narratives',
-        description: 'Translating technical experience into executive-level system narratives.'
+        title: 'Technology Strategy',
+        description: 'Aligning technology roadmaps with business capability mapping and commercial governance.'
+    },
+    {
+        icon: <CloudIcon className="h-6 w-6 text-primary" />,
+        title: 'Digital Transformation',
+        description: 'Governing mission-critical programme delivery across Defence, Government, and Finance.'
+    },
+    {
+        icon: <CpuIcon className="h-6 w-6 text-primary" />,
+        title: 'AI & Data Governance',
+        description: 'Operationalizing Responsible AI and data lineages within enterprise governance frameworks.'
+    },
+    {
+        icon: <ShieldCheckIcon className="h-6 w-6 text-primary" />,
+        title: 'Risk & Compliance',
+        description: 'Architecting for ISO 27001, 42001, and complex regulatory environments.'
+    },
+    {
+        icon: <ServerIcon className="h-6 w-6 text-primary" />,
+        title: 'Cloud-Native Systems',
+        description: 'Designing scalable AWS/Azure blueprints focused on auditability and operational resilience.'
     }
 ]
 

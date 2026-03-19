@@ -6,7 +6,7 @@ const ArchitecturalPhilosophy = () => {
                     <div className='max-w-3xl flex flex-col gap-4'>
                         <h2 className='text-3xl font-semibold tracking-tight sm:text-4xl'>Architectural Philosophy</h2>
                         <p className='text-lg text-muted-foreground'>
-                            My work sits at the convergence of Enterprise Architecture (TOGAF ADM discipline), Cloud-native distributed systems, GenAI operationalisation, Data governance and Responsible AI, and Executive communication and transformation design.
+                            Architecting Enterprise Scale programmes and delivering across all levels of stakeholders — C-level, Portfolio, and Projects. My work spans Business, Data, Application (Information systems), and Technology domains, combining TOGAF 10 discipline with hands-on technical execution.
                         </p>
                     </div>
 

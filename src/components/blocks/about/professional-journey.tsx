@@ -3,53 +3,56 @@ import { Badge } from '@/components/ui/badge'
 
 const roles = [
     {
-        title: 'Data Management Consultant',
+        title: 'Enterprise Architect',
         company: 'CGI Defence & Space Intelligence',
-        location: 'CGI Defence Contract',
-        description: 'Operated at the enterprise transformation layer — advising defence clients on data strategy, AI governance, and target-state architecture.',
+        location: 'London (Hybrid)',
+        description: 'Led architecture programme delivery for a mission-critical UK MOD digital transformation initiative, governing a £5M+ programme budget.',
         achievements: [
-            'Defined enterprise data architectures reducing decision latency by 35%',
-            'Facilitated C-suite AI operating model workshops',
-            'Structured £5M transformation roadmaps',
-            'Embedded Responsible AI governance frameworks'
+            'Produced target-state enterprise architecture that unblocked stalled investment',
+            'Business capability mapping and TOM design using LeanIX and Sparx EA',
+            'Led horizon scanning for emerging AI and data technologies',
+            'Reduced decision latency by 35% through TOGAF ADM governance'
         ],
-        impact: 'Strengthened ability to design architecture not only for scale — but for compliance, auditability, and mission-critical environments.'
+        impact: 'Strengthened mission-critical platform governance and shifted institutional decision-making at scale within the UK MOD.'
     },
     {
-        title: 'AI & Data Product Lead',
+        title: 'Solution Architect',
         company: 'Government of India',
-        location: 'State Renewable Energy Programme',
-        description: 'Moved from advisory to operational AI transformation, defining an enterprise AI strategy identifying 25+ high-impact use cases.',
+        location: 'India (On-site)',
+        description: 'Designed and governed end-to-end enterprise architecture for a cloud-based public financial management platform.',
         achievements: [
-            'Transformed reporting into AI-enabled decision systems, reducing policy cycles by 40%',
-            'Deployed autonomous AI agents across five administrative divisions',
-            'Recognised with the Government of India Excellence in Digital Transformation Award (2024)'
+            'Defined technology roadmap and HLD/LLD for AWS-based data governance',
+            'Managed vendor evaluation and architecture governance across cloud and analytics',
+            'Awarded Excellence in Digital Transformation (2024)',
+            'Implemented autonomous governance agents for data-driven policy decisions'
         ],
-        impact: 'Demonstrated how GenAI, embedded inside structured architecture, becomes an institutional capability rather than an experimental tool.'
+        impact: 'Demonstrated how autonomous governance, embedded inside structured architecture, becomes a powerful institutional capability.'
     },
     {
-        title: 'IT Director',
-        company: 'Glyphr Tech',
-        location: 'B2B SaaS',
-        description: 'Led architecture and operating model redesign for a cloud-native HRIS SaaS platform.',
+        title: 'Business Architect',
+        company: 'Glyphr Tech (SaaS)',
+        location: 'India',
+        description: 'Translated business strategy into application and integration architecture for an enterprise-scale Payroll & HRIS SaaS platform.',
         achievements: [
-            '99.9% platform availability',
-            '22% infrastructure cost reduction',
-            '30% YoY enterprise client retention growth',
-            '35% faster product release cycles'
+            'Defined capability roadmaps serving 80+ enterprise clients',
+            'Governed architecture for payroll systems handling 50,000+ monthly transactions',
+            'Led vendor management and alignment with regulatory requirements',
+            'Strengthened platform scalability and operational resilience'
         ],
-        impact: 'Deepened expertise in AWS-based microservices, event-driven systems, DevSecOps governance, and product-aligned architecture.'
+        impact: 'Deepened expertise in translating complex regulatory requirements into scalable, auditable, and resilient cloud architectures.'
     },
     {
-        title: 'Founder & Technical Product Lead',
+        title: 'Software Developer & IT Consultant',
         company: 'SM3 Digital',
-        location: 'Cloud Data Consultancy',
-        description: 'Transitioned from engineer to systems strategist. Built API-first distributed platforms and advised executives on digital roadmaps.',
+        location: 'India',
+        description: 'Managed consulting architecture engagements for 50+ SME clients across retail, finance, and e-commerce.',
         achievements: [
-            'Delivered scalable data architectures for SMEs',
-            'Generated £500K+ in revenue'
+            'Produced technology roadmaps and architecture assessments for SME clients',
+            'Owned commercial governance of £500K+ in consulting engagements',
+            'Evaluated and managed third-party vendors for cloud and API services',
+            'Aligned architecture decisions with client risk appetite and budget'
         ],
-        impact: 'Cemented the ability to architect from first principles, translate ambiguity into structured system design, and align technology investment with commercial differentiation.'
+        impact: 'Cemented the ability to architect from first principles and translate business ambiguity into structured technical roadmaps.'
     }
 ]
 

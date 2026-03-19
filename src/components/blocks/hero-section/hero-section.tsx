@@ -20,22 +20,22 @@ const HeroSection = ({ blogData }: { blogData: BlogPost[] }) => {
         <div className='grid grid-cols-1 gap-12 lg:grid-cols-2 items-center min-h-[60vh]'>
           <div className='flex flex-col items-start gap-6 text-left order-2 lg:order-1'>
             <Badge variant='outline' className='text-sm sm:text-[14px] font-medium py-1.5 px-4 rounded-full border-primary/20 bg-primary/5 text-primary backdrop-blur-sm self-start'>
-              Solution Architect | Enterprise Architect (TOGAF® Certified) | GenAI & Cloud Systems Strategist
+              Enterprise Architect | Technology Strategy | TOGAF® 10 Certified | Digital Transformation Consultant
             </Badge>
 
             <h1 className='text-4xl leading-tight font-bold tracking-tight text-foreground sm:text-5xl lg:text-[4rem] lg:leading-[1.1] text-balance'>
-              Architecting <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-primary/60">Intelligent Enterprise</span> Systems & Solutions
+              Architecting <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-primary/60">Enterprise Transformation</span> & Technology Strategy
             </h1>
 
             <p className='text-muted-foreground max-w-2xl text-lg sm:text-xl leading-relaxed'>
-              I design systems that think, scale, and endure. As a Solution Architect operating at the intersection of AWS Cloud, GenAI, MLOps, and Data Engineering, I help organisations transition from fragmented digital initiatives to cohesive, intelligence-driven enterprise platforms.
+              I design and govern target-state architectures for mission-critical platforms. As a TOGAF 10-certified Enterprise Architect, I combine hands-on technical depth in cloud, AI, and data systems with board-level fluency in governance, risk, and technology strategy.
             </p>
 
             <div className='mt-2 flex flex-wrap gap-2.5'>
-              <Badge variant='secondary' className='text-xs px-3.5 py-1.5 rounded-full shadow-sm hover:bg-secondary/80 transition-colors'>Enterprise Data & AI Platforms</Badge>
-              <Badge variant='secondary' className='text-xs px-3.5 py-1.5 rounded-full shadow-sm hover:bg-secondary/80 transition-colors'>GenAI Operationalisation</Badge>
-              <Badge variant='secondary' className='text-xs px-3.5 py-1.5 rounded-full shadow-sm hover:bg-secondary/80 transition-colors'>AI Operating Models</Badge>
-              <Badge variant='secondary' className='text-xs px-3.5 py-1.5 rounded-full shadow-sm hover:bg-secondary/80 transition-colors'>Value Realisation</Badge>
+              <Badge variant='secondary' className='text-xs px-3.5 py-1.5 rounded-full shadow-sm hover:bg-secondary/80 transition-colors'>Enterprise Architecture (TOGAF 10)</Badge>
+              <Badge variant='secondary' className='text-xs px-3.5 py-1.5 rounded-full shadow-sm hover:bg-secondary/80 transition-colors'>Technology Strategy</Badge>
+              <Badge variant='secondary' className='text-xs px-3.5 py-1.5 rounded-full shadow-sm hover:bg-secondary/80 transition-colors'>Digital Transformation</Badge>
+              <Badge variant='secondary' className='text-xs px-3.5 py-1.5 rounded-full shadow-sm hover:bg-secondary/80 transition-colors'>AI & Data Governance</Badge>
             </div>
           </div>
 

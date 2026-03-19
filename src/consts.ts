@@ -1,31 +1,32 @@
 // Site Configuration
 // Centralized configuration for site metadata, SEO, and branding
 
-export const SITE_TITLE = 'Lakshya Tangri | Solution Architect & GenAI Strategist'
+export const SITE_TITLE = 'Lakshya Tangri | Enterprise, Solution & Functional Architect'
 export const SITE_DESCRIPTION =
-  'I design systems that think, scale, and endure. Exploring High-Level System Design, Enterprise GenAI architecture patterns, Cloud-native platform blueprints on AWS, MLOps, and Architecture governance.'
+  'I design and govern target-state architectures for mission-critical platforms. TOGAF 10-certified Enterprise Architect specializing in technology strategy, digital transformation, and AI/Data systems across Defence, Government, and Finance.'
 
 export const GITHUB_URL = 'https://github.com/lakshyatangri'
 export const SITE_URL = 'https://lakshyatangri.com/' // Replace with actual URL
 
 export const SITE_METADATA = {
-  title: {
-    default: 'Lakshya Tangri | Solution Architect & GenAI Strategist'
-  },
   description:
-    'I design systems that think, scale, and endure. Exploring High-Level System Design, Enterprise GenAI architecture patterns, Cloud-native platform blueprints on AWS, MLOps, and Architecture governance.',
+    'I design and govern target-state architectures for mission-critical platforms. TOGAF 10-certified Enterprise Architect specializing in technology strategy, digital transformation, and AI/Data systems across Defence, Government, and Finance.',
   keywords: [
-    'Solution Architect',
     'Enterprise Architect',
-    'TOGAF',
-    'GenAI',
-    'MLOps',
-    'Data Engineering',
-    'RESHADED framework',
-    'AWS Cloud',
-    'Cloud-native',
-    'AI-enabled operating models',
-    'System Design'
+    'Solution Architect',
+    'Functional Architect',
+    'TOGAF 10',
+    'Technology Strategy',
+    'Digital Transformation',
+    'Defence IT',
+    'Government Consulting',
+    'LeanIX',
+    'Sparx EA',
+    'ArchiMate 3',
+    'Business Capability Mapping',
+    'Target Operating Model',
+    'Responsible AI',
+    'Architecture Governance'
   ],
   authors: [{ name: 'Lakshya Tangri', url: SITE_URL }],
   creator: 'Lakshya Tangri',
@@ -34,15 +35,15 @@ export const SITE_METADATA = {
     index: true,
     follow: true
   },
-  language: 'en-US',
-  locale: 'en_US',
+  language: 'en-GB',
+  locale: 'en_GB',
   openGraph: {
     type: 'website',
-    locale: 'en_US',
+    locale: 'en_GB',
     siteName: 'Lakshya Tangri',
-    title: 'Lakshya Tangri | Solution Architect & GenAI Strategist',
+    title: 'Lakshya Tangri | Enterprise, Solution & Functional Architect',
     description:
-      'I design systems that think, scale, and endure. Exploring High-Level System Design, Enterprise GenAI architecture patterns, Cloud-native platform blueprints on AWS, MLOps, and Architecture governance.',
+      'I design and govern target-state architectures for mission-critical platforms. TOGAF 10-certified Enterprise Architect specializing in technology strategy, digital transformation, and AI/Data systems across Defence, Government, and Finance.',
     images: [
       {
         url: '/images/og-image.png',
@@ -57,9 +58,9 @@ export const SITE_METADATA = {
     card: 'summary_large_image',
     site: '@lakshyatangri',
     creator: '@lakshyatangri',
-    title: 'Lakshya Tangri | Solution Architect & GenAI Strategist',
+    title: 'Lakshya Tangri | Enterprise, Solution & Functional Architect',
     description:
-      'I design systems that think, scale, and endure. Exploring High-Level System Design, Enterprise GenAI architecture patterns, Cloud-native platform blueprints on AWS, MLOps, and Architecture governance.',
+      'I design and govern target-state architectures for mission-critical platforms. TOGAF 10-certified Enterprise Architect specializing in technology strategy, digital transformation, and AI/Data systems across Defence, Government, and Finance.',
     images: ['/images/og-image.png']
   },
   verification: {
@@ -84,8 +85,8 @@ export const COMPANY_INFO = {
   logo: `/images/site-logo.png`,
   foundingDate: '2024',
   address: {
-    streetAddress: 'London',
-    addressLocality: 'London',
+    streetAddress: 'Birmingham',
+    addressLocality: 'Birmingham',
     addressRegion: 'UK',
     postalCode: '',
     addressCountry: 'UK'
