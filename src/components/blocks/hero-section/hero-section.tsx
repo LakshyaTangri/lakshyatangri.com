@@ -20,15 +20,15 @@ const HeroSection = ({ blogData }: { blogData: BlogPost[] }) => {
         <div className='grid grid-cols-1 gap-12 lg:grid-cols-2 items-center min-h-[60vh]'>
           <div className='flex flex-col items-start gap-6 text-left order-2 lg:order-1'>
             <Badge variant='outline' className='text-sm sm:text-[14px] font-medium py-1.5 px-4 rounded-full border-primary/20 bg-primary/5 text-primary backdrop-blur-sm self-start'>
-              Enterprise Architect | Technology Strategy | TOGAF® 10 Certified | Digital Transformation Consultant
+              Solution Architect | Enterprise Architect | TOGAF® 10 Practitioner Certified | Working Backwards from the Customer
             </Badge>
 
             <h1 className='text-4xl leading-tight font-bold tracking-tight text-foreground sm:text-5xl lg:text-[4rem] lg:leading-[1.1] text-balance'>
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-primary/60">AWS Solutions Architect</span> — Cloud-Native Systems for Defence, Government & Finance
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-primary/60">AWS Solutions Architect</span> — Cloud-Native Systems for AI SaaS, PaaS & Startups
             </h1>
 
             <p className='text-muted-foreground max-w-2xl text-lg sm:text-xl leading-relaxed'>
-              I design and deliver production-grade AWS architectures — spanning multi-account landing zones, serverless data pipelines, AI/ML platforms, and zero-trust security postures — grounded in TOGAF governance and enterprise delivery experience.
+              I design and deliver production-grade cloud architectures — spanning multi-account landing zones, serverless data pipelines, AI/ML platforms, and zero-trust security postures — grounded in TOGAF governance and enterprise delivery experience.
             </p>
 
             <div className='mt-2 flex flex-wrap gap-2.5'>
