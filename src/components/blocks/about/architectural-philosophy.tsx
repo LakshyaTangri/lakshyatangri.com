@@ -30,9 +30,8 @@ const ArchitecturalPhilosophy = () => {
                         </div>
                     </div>
 
-                    <div className='mt-8 text-2xl font-semibold tracking-tight text-primary'>
-                        "If you are distressed by anything external, the pain is not due to the thing itself, but to your estimate of it; and this you have the power to revoke at any moment.
-                        by Marcus Aurelius, Meditations"
+                    <div className='mt-8 text-2xl font-semibold tracking-tight text-primary italic'>
+                        "Working backwards from the customer"
                     </div>
                 </div>
             </div>
