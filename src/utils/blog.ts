@@ -33,11 +33,11 @@ export function normalizeCategory(category: string | undefined): string {
  * Get related posts based on category
  */
 export function getRelatedPosts(
-  posts: CollectionEntry<'blog'>[],
+  posts: any[],
   currentSlug: string,
   currentCategory: string,
   limit: number = 3
-): CollectionEntry<'blog'>[] {
+): any[] {
   const normalizedCurrent = normalizeCategory(currentCategory)
 
   // First try to get posts from same category
@@ -58,9 +58,9 @@ export function getRelatedPosts(
  * Get navigation links for previous and next posts
  */
 export function getPostNavigation(
-  posts: CollectionEntry<'blog'>[],
+  posts: any[],
   currentSlug: string
-): { previous: CollectionEntry<'blog'> | null; next: CollectionEntry<'blog'> | null } {
+): { previous: any | null; next: any | null } {
   // Sort posts by pubDate (newest first)
   const sortedPosts = [...posts].sort((a, b) => a.data.id - b.data.id)
   const currentIndex = sortedPosts.findIndex(post => post.id === currentSlug)

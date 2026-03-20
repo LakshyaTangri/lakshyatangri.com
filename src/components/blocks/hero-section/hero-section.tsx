@@ -24,18 +24,21 @@ const HeroSection = ({ blogData }: { blogData: BlogPost[] }) => {
             </Badge>
 
             <h1 className='text-4xl leading-tight font-bold tracking-tight text-foreground sm:text-5xl lg:text-[4rem] lg:leading-[1.1] text-balance'>
-              Architecting <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-primary/60">Enterprise Transformation</span> & Technology Strategy
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-primary/60">AWS Solutions Architect</span> — Cloud-Native Systems for Defence, Government & Finance
             </h1>
 
             <p className='text-muted-foreground max-w-2xl text-lg sm:text-xl leading-relaxed'>
-              I design and govern target-state architectures for mission-critical platforms, combining hands-on technical depth in cloud, AI, and data systems with board-level fluency in governance, risk, and regulatory compliance.
+              I design and deliver production-grade AWS architectures — spanning multi-account landing zones, serverless data pipelines, AI/ML platforms, and zero-trust security postures — grounded in TOGAF governance and enterprise delivery experience.
             </p>
 
             <div className='mt-2 flex flex-wrap gap-2.5'>
-              <Badge variant='secondary' className='text-xs px-3.5 py-1.5 rounded-full shadow-sm hover:bg-secondary/80 transition-colors'>Enterprise Architecture (TOGAF 10)</Badge>
-              <Badge variant='secondary' className='text-xs px-3.5 py-1.5 rounded-full shadow-sm hover:bg-secondary/80 transition-colors'>Technology Strategy</Badge>
-              <Badge variant='secondary' className='text-xs px-3.5 py-1.5 rounded-full shadow-sm hover:bg-secondary/80 transition-colors'>Digital Transformation</Badge>
-              <Badge variant='secondary' className='text-xs px-3.5 py-1.5 rounded-full shadow-sm hover:bg-secondary/80 transition-colors'>AI & Data Governance</Badge>
+              <Badge variant='secondary' className='text-xs px-3.5 py-1.5 rounded-full shadow-sm hover:bg-secondary/80 transition-colors'>AWS Solutions Architecture</Badge>
+              <Badge variant='secondary' className='text-xs px-3.5 py-1.5 rounded-full shadow-sm hover:bg-secondary/80 transition-colors'>Multi-Account Landing Zones</Badge>
+              <Badge variant='secondary' className='text-xs px-3.5 py-1.5 rounded-full shadow-sm hover:bg-secondary/80 transition-colors'>Serverless & Event-Driven Design</Badge>
+              <Badge variant='secondary' className='text-xs px-3.5 py-1.5 rounded-full shadow-sm hover:bg-secondary/80 transition-colors'>AI/ML on AWS (Bedrock, SageMaker)</Badge>
+              <Badge variant='secondary' className='text-xs px-3.5 py-1.5 rounded-full shadow-sm hover:bg-secondary/80 transition-colors'>Zero-Trust Security (IAM, SCPs)</Badge>
+              <Badge variant='secondary' className='text-xs px-3.5 py-1.5 rounded-full shadow-sm hover:bg-secondary/80 transition-colors'>TOGAF 10 Governance</Badge>
+              <Badge variant='secondary' className='text-xs px-3.5 py-1.5 rounded-full shadow-sm hover:bg-secondary/80 transition-colors'>FinOps & Cost Architecture</Badge>
             </div>
           </div>
 

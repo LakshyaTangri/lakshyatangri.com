@@ -1,0 +1,120 @@
+---
+import Layout from '@/layouts/Layout.astro'
+import { Separator } from '@/components/ui/separator'
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator
+} from '@/components/ui/breadcrumb'
+import { AuthorMetadata } from '@/components/AuthorAvatar'
+import { normalizeCategory } from '@/utils/blog'
+
+interface Props {
+  entry: any
+  readTime: number
+}
+
+const { entry, readTime } = Astro.props
+const { data, body: content } = entry
+const normalizedCategory = normalizeCategory(data.category)
+
+const schema = {
+  '@context': 'https://schema.org',
+  '@type': 'BlogPosting',
+  headline: data.title,
+  description: data.description,
+  image: data.imageUrl,
+  datePublished: data.pubDate,
+  author: {
+    '@type': 'Person',
+    name: data.author
+  }
+}
+---
+
+<Layout
+  title={data.title}
+  description={data.description}
+  image={data.imageUrl}
+  type='article'
+  publishedTime={data.pubDate}
+  author={data.author}
+  schema={schema}
+>
+  <main class='flex flex-col'>
+    <section class='py-8 sm:pt-16 sm:pb-24'>
+      <div class='mx-auto max-w-7xl space-y-8 px-4 sm:px-6 lg:space-y-16 lg:px-8'>
+        <div class='gap-16 md:grid md:grid-cols-5 lg:grid-cols-7'>
+          <!-- Main Content (Full width for HTML posts as they might have wide diagrams) -->
+          <div class='space-y-12 md:col-span-12 lg:col-span-12'>
+            <!-- Breadcrumbs -->
+            <div class='space-y-6'>
+              <Breadcrumb>
+                <BreadcrumbList>
+                  <BreadcrumbItem>
+                    <BreadcrumbLink href='/'>Home</BreadcrumbLink>
+                  </BreadcrumbItem>
+                  <BreadcrumbSeparator />
+                  <BreadcrumbItem>
+                    <BreadcrumbLink href='/#categories'>Blog</BreadcrumbLink>
+                  </BreadcrumbItem>
+                  <BreadcrumbSeparator />
+                  <BreadcrumbItem>
+                    <BreadcrumbPage>{normalizedCategory}</BreadcrumbPage>
+                  </BreadcrumbItem>
+                </BreadcrumbList>
+              </Breadcrumb>
+
+              <!-- Title and Description -->
+              <h1 class='text-foreground text-4xl font-semibold'>{data.title}</h1>
+              <p class='text-muted-foreground text-xl'>{data.description}</p>
+
+              <Separator />
+
+              <!-- Post Metadata -->
+              <div class='flex flex-wrap justify-between gap-4'>
+                <div class='flex flex-wrap items-center gap-3'>
+                  <AuthorMetadata client:load avatarUrl={data.avatarUrl} author={data.author} />
+                  <div class='flex flex-col gap-1'>
+                    <span class='text-muted-foreground text-sm'>Written by</span>
+                    <span class='text-foreground text-sm font-medium'>{data.author}</span>
+                  </div>
+                </div>
+                <div class='flex flex-col gap-1.5'>
+                  <span class='text-muted-foreground text-sm'>Read Time</span>
+                  <span class='text-foreground text-sm font-medium'>{readTime} minute read</span>
+                </div>
+                <div class='flex flex-col gap-1.5'>
+                  <span class='text-muted-foreground text-sm'>Posted on</span>
+                  <span class='text-foreground text-sm font-medium'>{data.pubDate}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Hero Image -->
+            {
+              data.imageUrl && (
+                <div>
+                  <img
+                    src={data.imageUrl}
+                    alt={data.title}
+                    class='max-h-148 w-full rounded-xl'
+                    loading='lazy'
+                  />
+                </div>
+              )
+            }
+
+            <!-- Article Content -->
+            <article id='content' class='prose dark:prose-invert max-w-none'>
+              <Fragment set:html={content} />
+            </article>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</Layout>

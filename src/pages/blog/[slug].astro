@@ -17,30 +17,49 @@ import { getRelatedPosts, getPostNavigation, calculateReadTime, normalizeCategor
 import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react'
 
 import Blog from '@/components/blocks/blog-related-post/blog-related-post'
+import HtmlPostLayout from '@/layouts/HtmlPostLayout.astro'
 
 export async function getStaticPaths() {
-  const blogEntries = await getCollection('blog')
-  return blogEntries.map(entry => ({
+  const mdxEntries = await getCollection('blog')
+  const htmlEntries = await getCollection('blogHtml')
+
+  const mdxPaths = mdxEntries.map(entry => ({
     params: { slug: entry.id },
-    props: { entry }
+    props: { entry, type: 'mdx' }
   }))
+
+  const htmlPaths = htmlEntries.map(entry => ({
+    params: { slug: entry.id.replace(/\.html$/, '') },
+    props: { entry, type: 'html' }
+  }))
+
+  return [...mdxPaths, ...htmlPaths]
 }
 
-const { entry } = Astro.props
-const { Content, headings } = await render(entry)
+const { entry, type } = Astro.props
 
 // Get all posts for navigation and related posts
-const allPosts = await getCollection('blog')
-const publishedPosts = allPosts
+const mdxPosts = await getCollection('blog')
+const htmlPosts = await getCollection('blogHtml')
+// Create a unified list for navigation
+const allPublishedPosts = [
+  ...mdxPosts,
+  ...htmlPosts.map(p => ({ ...p, id: p.id.replace(/\.html$/, '') }))
+]
+
+// Calculate read time if not provided
+const readTime = entry.data.readTime || calculateReadTime(entry.body)
+
+const { Content, headings } = type === 'mdx' ? await render(entry) : { Content: null, headings: [] }
 
 // Get related posts (same category)
 const normalizedCategory = normalizeCategory(entry.data.category)
-const relatedPosts = getRelatedPosts(publishedPosts, entry.id, normalizedCategory, 3)
+const relatedPosts = getRelatedPosts(allPublishedPosts, entry.id.replace(/\.html$/, ''), normalizedCategory, 3)
 
 // Map relatedPosts to BlogPost type for the Blog component
 const formattedRelatedPosts = relatedPosts.map(post => ({
   id: post.data.id,
-  slug: post.data.slug,
+  slug: post.data.slug || post.id,
   title: post.data.title,
   description: post.data.description,
   imageUrl: post.data.imageUrl || '',
@@ -49,15 +68,12 @@ const formattedRelatedPosts = relatedPosts.map(post => ({
   author: post.data.author,
   avatarUrl: post.data.avatarUrl || '',
   category: normalizeCategory(post.data.category),
-  readTime: post.data.readTime || calculateReadTime(post.body),
+  readTime: post.data.readTime || (post.body ? calculateReadTime(post.body) : 5),
   featured: post.data.featured || false
 }))
 
 // Get previous and next posts
-const { previous: previousPost, next: nextPost } = getPostNavigation(publishedPosts, entry.id)
-
-// Calculate read time if not provided
-const readTime = entry.data.readTime || calculateReadTime(entry.body)
+const { previous: previousPost, next: nextPost } = getPostNavigation(allPublishedPosts, entry.id.replace(/\.html$/, ''))
 
 const schema = {
   '@context': 'https://schema.org',
@@ -73,15 +89,19 @@ const schema = {
 }
 ---
 
-<Layout
-  title={entry.data.title}
-  description={entry.data.description}
-  image={entry.data.imageUrl}
-  type='article'
-  publishedTime={entry.data.pubDate}
-  author={entry.data.author}
-  schema={schema}
->
+{
+  type === 'html' ? (
+    <HtmlPostLayout entry={entry} readTime={readTime} />
+  ) : (
+    <Layout
+      title={entry.data.title}
+      description={entry.data.description}
+      image={entry.data.imageUrl}
+      type='article'
+      publishedTime={entry.data.pubDate}
+      author={entry.data.author}
+      schema={schema}
+    >
   <main class='flex flex-col'>
     <section class='py-8 sm:pt-16 sm:pb-24'>
       <div class='mx-auto max-w-7xl space-y-8 px-4 sm:px-6 lg:space-y-16 lg:px-8'>
@@ -205,3 +225,5 @@ const schema = {
     <Blog relatedPosts={formattedRelatedPosts} />
   </main>
 </Layout>
+  )
+}
