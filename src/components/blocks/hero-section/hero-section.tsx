@@ -24,7 +24,7 @@ const HeroSection = ({ blogData }: { blogData: BlogPost[] }) => {
             </Badge>
 
             <h1 className='text-4xl leading-tight font-bold tracking-tight text-foreground sm:text-5xl lg:text-[4rem] lg:leading-[1.1] text-balance'>
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-primary/60">AWS Solutions Architect</span> — Cloud-Native Systems for AI SaaS, PaaS & Startups
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-primary/60">AWS Solutions Architect</span> Cloud-Native Systems for AI SaaS, PaaS & Startups
             </h1>
 
             <p className='text-muted-foreground max-w-2xl text-lg sm:text-xl leading-relaxed'>
