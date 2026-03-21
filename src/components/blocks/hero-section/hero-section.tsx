@@ -17,8 +17,7 @@ const HeroSection = ({ blogData }: { blogData: BlogPost[] }) => {
 
       <div className='mx-auto flex h-full max-w-7xl flex-col px-4 sm:px-6 lg:px-8 relative z-10'>
         {/* Hero Header */}
-        <div className='grid grid-cols-1 gap-12 lg:grid-cols-2 items-center min-h-[60vh]'>
-          <div className='flex flex-col items-start gap-6 text-left order-2 lg:order-1'>
+        <div className='flex flex-col items-start gap-6 text-left min-h-[60vh] py-12'>
             <Badge variant='outline' className='text-sm sm:text-[14px] font-medium py-1.5 px-4 rounded-full border-primary/20 bg-primary/5 text-primary backdrop-blur-sm self-start'>
               Solution Architect | Enterprise Architect | TOGAF® 10 Practitioner Certified | Working Backwards from the Customer
             </Badge>
@@ -27,7 +26,7 @@ const HeroSection = ({ blogData }: { blogData: BlogPost[] }) => {
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-primary/60">AWS Solutions Architect</span> Cloud-Native Systems for AI SaaS, PaaS & Startups
             </h1>
 
-            <p className='text-muted-foreground max-w-2xl text-lg sm:text-xl leading-relaxed'>
+            <p className='text-muted-foreground max-w-4xl text-lg sm:text-xl leading-relaxed'>
               I design and deliver production-grade cloud architectures — spanning multi-account landing zones, serverless data pipelines, AI/ML platforms, and zero-trust security postures — grounded in TOGAF governance and enterprise delivery experience.
             </p>
 
@@ -39,11 +38,6 @@ const HeroSection = ({ blogData }: { blogData: BlogPost[] }) => {
               <Badge variant='secondary' className='text-xs px-3.5 py-1.5 rounded-full shadow-sm hover:bg-secondary/80 transition-colors'>Zero-Trust Security (IAM, SCPs)</Badge>
               <Badge variant='secondary' className='text-xs px-3.5 py-1.5 rounded-full shadow-sm hover:bg-secondary/80 transition-colors'>TOGAF 10 Governance</Badge>
               <Badge variant='secondary' className='text-xs px-3.5 py-1.5 rounded-full shadow-sm hover:bg-secondary/80 transition-colors'>FinOps & Cost Architecture</Badge>
-            </div>
-          </div>
-
-          <div className='flex justify-center lg:justify-end order-1 lg:order-2 w-full mx-auto max-w-[400px] lg:max-w-none relative group'>
-            {/* Elegant glowing background layer for image */}
           </div>
         </div>
 
