@@ -44,12 +44,6 @@ const HeroSection = ({ blogData }: { blogData: BlogPost[] }) => {
 
           <div className='flex justify-center lg:justify-end order-1 lg:order-2 w-full mx-auto max-w-[400px] lg:max-w-none relative group'>
             {/* Elegant glowing background layer for image */}
-            <div className='absolute -inset-1 sm:-inset-4 rounded-[2rem] bg-gradient-to-tr from-primary/30 via-transparent to-primary/10 blur-2xl opacity-50 group-hover:opacity-80 transition-opacity duration-700 hidden sm:block mt-8'></div>
-            <img
-              src='/images/lakshya.webp'
-              alt='Lakshya Tangri'
-              className='relative w-full max-w-[380px] lg:max-w-[440px] shadow-2xl ring-1 ring-border/50 transition-transform duration-700 group-hover:scale-[1.02] rounded-[2rem] object-cover'
-            />
           </div>
         </div>
 
