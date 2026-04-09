@@ -6,7 +6,7 @@ const ArchitecturalPhilosophy = () => {
                     <div className='max-w-3xl flex flex-col gap-4'>
                         <h2 className='text-3xl font-semibold tracking-tight sm:text-4xl'>Architectural Philosophy</h2>
                         <p className='text-lg text-muted-foreground'>
-                            Respect the Policies -> Standards -> Guidelines -> Procedures & Build System catering to Portfolio -> Programme -> Project -> Product -> Solution -> Service -> Continous Development -> Continous Integreation
+                            Respect the Policies → Standards → Guidelines → Procedures & Build System catering to Portfolio → Programme → Project → Product → Solution → Service → Continuous Development → Continuous Integration
                         </p>
                     </div>
 
