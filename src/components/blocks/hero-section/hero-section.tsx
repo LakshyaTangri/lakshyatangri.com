@@ -19,7 +19,7 @@ const HeroSection = ({ blogData }: { blogData: BlogPost[] }) => {
         {/* Hero Header */}
         <div className='flex flex-col items-start gap-6 text-left min-h-[60vh] py-12'>
             <Badge variant='outline' className='text-sm sm:text-[14px] font-medium py-1.5 px-4 rounded-full border-primary/20 bg-primary/5 text-primary backdrop-blur-sm self-start'>
-              Solution Architect | Enterprise Architect | TOGAF® 10 Practitioner Certified | Working Backwards from the Customer
+              Solutions Architect | Enterprise Architect | FinTech & Governance | TOGAF® 10 Practitioner Certified | Working Backwards from the Stakeholder | FinTech & Governance
             </Badge>
 
             <h1 className='text-4xl leading-tight font-bold tracking-tight text-foreground sm:text-5xl lg:text-[4rem] lg:leading-[1.1] text-balance'>
