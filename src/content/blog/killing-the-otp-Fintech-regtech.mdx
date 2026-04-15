@@ -1,0 +1,220 @@
+---
+id: 16
+slug: 'killing-the-otp-fintech-regtech'
+title: 'Killing the OTP: How Agentic AI is Revolutionizing Authentication in Fintech & Regtech'
+description: 'How autonomous AI agents close the loop from anomaly detection to regulatory reporting — and how to architect the system on AWS Cloud in four phases.'
+imageUrl: '/images/blog-post/post-16.webp'
+imageAlt: 'Agentic AI fintech fraud detection architecture'
+pubDate: 'March 18, 2026'
+author: 'Lakshya Tangri'
+avatarUrl: '/lakshya.png'
+category: 'Fintech'
+readTime: 12
+featured: true
+---
+# Building a Sub-Second Fraud Detection Engine: Architecture, Compliance, and Scale
+
+> **TL;DR:** This post walks through how to architect a multi-modal, real-time fraud detection gateway capable of 5,000+ TPS at p99 latency under 200ms — without ever storing raw PII — while remaining fully compliant with India's DPDP Act and RBI Digital Lending Guidelines.
+
+---
+
+## 1. Introduction: The Technical Premise
+
+The Indian digital payments landscape is operating at a scale that most legacy authentication stacks were never designed for. UPI clocked over 13 billion transactions in a single month in early 2024. The fraud vectors — SIM-swapping, AI-generated deepfakes, mule account networks — have evolved at the same pace. Yet most fraud prevention infrastructure still relies on a fundamentally synchronous, sequential model: verify OTP, call UIDAI, call CIBIL, render a decision. At DPI scale, this architecture doesn't just slow down — it collapses.
+
+The system described in this post was designed from first principles to invert that model. The objective was unambiguous:
+
+- **Scale:** 5,000+ Transactions Per Second (TPS)
+- **Latency:** p99 risk-scoring API response < 200ms
+- **Compliance:** Zero raw PII in any persistent store; fully auditable under DPDP Act (2023) and RBI Digital Lending Guidelines
+
+This is not a post about a framework. It is a post about the specific decisions — CQRS, Kafka-based stream ingestion, AWS Inferentia, QLDB audit trails — that make the above constraints simultaneously achievable.
+
+---
+
+## 2. High-Level Design (HLD): The Architecture
+
+<img src="/diagrams/hld-fraud-engine.png" alt="High-Level Architecture: API Gateway → EKS Microservices (Consent API, Auth API, Risk API) → Kafka Stream Layer → ML Risk Engine on AWS Inferentia, with VPC-secured CBS/UIDAI integrations" />
+
+The architecture is built around three non-negotiable principles derived from the AWS Well-Architected Framework:
+
+1. **Loose coupling:** Every service communicates asynchronously over Kafka topics. No direct synchronous service-to-service calls in the hot path.
+2. **Defense in depth for compliance:** PII is tokenised at the ingestion boundary. No downstream service ever sees raw identifiers.
+3. **Blast radius minimisation:** Each microservice (Consent API, Auth API, Risk API) is independently deployable, scalable, and failure-isolated behind an Istio service mesh.
+
+### Component Breakdown
+
+| Layer | Component | Responsibility |
+|---|---|---|
+| Client | Mobile/Web SDK | Passive telemetry capture (device gyro, typing cadence) |
+| Identity & Consent | OIDC/OAuth2 + Sahamati AA | Token issuance, FIU consent lifecycle |
+| Ingestion | Amazon API Gateway + ALB | TLS termination, rate limiting, auth header validation |
+| Orchestration | EKS (Kubernetes) | Container scheduling, HPA, namespace isolation |
+| Stream Processing | Apache Kafka + Apache Flink | Event streaming, real-time windowed aggregation |
+| Risk Inference | AWS Inferentia (ML) | Behavioural model scoring, liveness classification |
+| State Cache | Amazon ElastiCache (Redis) | Sub-millisecond behavioural session state |
+| Audit | AWS QLDB | Immutable, cryptographically verifiable transaction ledger |
+| Secrets & Keys | AWS KMS | Per-tenant isolated encryption key management |
+
+---
+
+## 3. Solving the Latency Problem: CQRS and Parallel Execution
+
+### The Bottleneck
+
+The single biggest latency killer in a traditional fraud stack is the synchronous external call chain. A typical KYC flow looks like this:
+
+```
+User Request → Verify OTP → Call UIDAI (Aadhaar eKYC) → Call CIBIL (bureau) → Call CBS → Render Decision
+```
+
+Each hop adds 80–300ms of network latency. Chain three of them and you've already blown the 200ms p99 budget — before your ML model has even been invoked.
+
+### The Solution: CQRS + Parallel Execution
+
+The Command Query Responsibility Segregation (CQRS) pattern separates the write model (initiating a transaction, capturing consent) from the read model (scoring risk). The risk read model is pre-warmed: it operates against a materialised view of behavioural state that is continuously updated by the Flink stream processor, not against live external APIs.
+
+```json
+// Risk Query Payload (Read Model — no external bureau call required)
+{
+  "session_token": "tok_7g3hK9mN",
+  "device_fingerprint_hash": "sha256:a1b2c3...",
+  "behavioural_score": 0.94,
+  "anomaly_flags": [],
+  "cached_trust_level": "HIGH",
+  "last_updated_epoch": 1720000512
+}
+```
+
+External bureau calls (UIDAI, CIBIL) are **decoupled from the transaction hot path**. They run asynchronously, enriching the behavioural state model in the background. The risk engine scores against cached, aggregated signals — not raw, latency-volatile API calls.
+
+### Real-Time Processing Stack
+
+- **Apache Kafka:** Event topics partitioned by `user_id_hash`. The Risk API publishes telemetry events; the Flink job consumes them.
+- **Apache Flink:** Applies 30-second tumbling windows to aggregate typing cadence variance, geolocation drift, and device orientation deltas. Output is written to Redis.
+- **Redis (ElastiCache):** Stores the materialised behavioural state per session. TTL-controlled. Every risk query reads from Redis first — UIDAI is the fallback, not the default.
+
+This approach directly mirrors the thesis work on distributed state management in low-latency data pipelines: treat external systems as eventual data sources, not synchronous dependencies.
+
+---
+
+## 4. The Compliance & GRC Layer: Privacy by Design
+
+Compliance is not a feature you bolt on after the architecture is stable. It is a constraint that shapes the architecture from day one. The two primary regulatory frameworks here are the **DPDP Act (2023)** and the **RBI Digital Lending Guidelines**.
+
+### DPDP Act Implementation: Data Minimisation at Ingestion
+
+The moment telemetry leaves the client SDK, it passes through a tokenisation gateway before any persistent write occurs.
+
+- **AWS Macie** continuously scans S3 event buckets for PII pattern leakage (Aadhaar number formats, mobile number regex, email patterns). Any match triggers an automated quarantine workflow.
+- All raw identifiers are replaced with deterministic, reversible tokens using AES-256-GCM. The token-to-identity mapping lives exclusively in a KMS-encrypted secrets store, isolated per tenant.
+- S3 event buckets use **Object Lock with Governance mode** and a 7-day auto-expiry policy. Raw telemetry is never retained beyond its processing window.
+
+### Right to be Forgotten: Automated Data-Shredding
+
+DPDP mandates that a Data Principal's erasure request be honoured within a defined timeline. This is operationalised as follows:
+
+```
+Erasure Request → Consent API (revoke FIU token)
+→ KMS key rotation (token invalidation)
+→ Kafka compaction tombstone (delete by key)
+→ Redis UNLINK (async eviction)
+→ S3 Object Delete (with replication deletion)
+→ Macie confirmation scan
+→ QLDB audit entry (erasure event recorded, PII-free)
+```
+
+Critically, the QLDB audit trail **retains the erasure event itself** — including timestamp, requesting party, and affected data categories — stripped of any PII. This satisfies RBI's requirement for immutable audit trails while honouring the user's erasure right.
+
+### RBI Digital Lending Guidelines: Immutable Audit Trails
+
+AWS QLDB is a fully managed ledger database with a cryptographically verifiable transaction log. Every consent grant, auth decision, and risk score is written as an immutable QLDB document.
+
+- **Digest verification:** QLDB generates a SHA-256 digest of the journal at any point-in-time. An auditor can verify that a historical record has not been tampered with by recomputing the digest against the journal hash chain.
+- **Per-tenant KMS isolation:** Each NBFC or bank partner operates under a dedicated KMS key. Compromise of one tenant's key does not expose another's audit trail.
+
+### Consent Management: Sahamati AA Integration
+
+The Sahamati Account Aggregator ecosystem defines the FIU (Financial Information User) token lifecycle:
+
+1. **Issuance:** The Consent API generates a signed JWT asserting the data purpose, retention period, and data categories consented to. This is registered with the AA ecosystem.
+2. **Validation:** Every downstream API call includes the consent artefact. The Risk API validates the token signature before processing.
+3. **Revocation:** A Webhook subscription ensures that any revocation event from the AA framework propagates to the Consent API within seconds, immediately invalidating downstream access.
+
+<img src="/diagrams/consent-flow-sahamati.png" alt="Sahamati Account Aggregator consent lifecycle: FIU token issuance, validation at Risk API, and webhook-driven revocation flow" />
+
+---
+
+## 5. Fault Tolerance & System Resilience: DORA Principles in Practice
+
+The Digital Operational Resilience Act (DORA) — and its RBI equivalents — mandates demonstrable operational resilience, not just redundancy on paper. The following design decisions operationalise that mandate.
+
+### Multi-AZ Active-Active Deployment
+
+The EKS cluster spans three Availability Zones in `ap-south-1` (Mumbai). The Risk API is deployed with an anti-affinity policy ensuring no two replicas land on the same AZ. ALB health checks route traffic away from a degraded AZ within 30 seconds.
+
+### Horizontal Pod Autoscaling: Kafka Lag, Not CPU
+
+Standard HPA triggers on CPU utilisation. This is a lagging indicator for stream-processing workloads. A Kafka consumer that is slow because the upstream broker is flooded will not show elevated CPU — its threads are blocking on I/O.
+
+The HPA policy here is driven by **Kafka consumer group lag** via the KEDA (Kubernetes Event-Driven Autoscaling) operator:
+
+```yaml
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: risk-api-scaler
+spec:
+  scaleTargetRef:
+    name: risk-api-deployment
+  triggers:
+  - type: kafka
+    metadata:
+      bootstrapServers: kafka-broker:9092
+      consumerGroup: risk-engine-cg
+      topic: telemetry-events
+      lagThreshold: "500"
+```
+
+When consumer lag on `telemetry-events` exceeds 500 messages, KEDA scales out Risk API pods within 60 seconds. During Diwali traffic spikes — where UPI volumes can surge 3–5x within hours — this is the difference between graceful scale-out and cascading queue saturation.
+
+### Circuit Breaking and Dead Letter Queues
+
+- **Istio Service Mesh:** Circuit breakers are configured on all synchronous egress calls (UIDAI, CBS). A 50% error rate over a 10-second window trips the breaker. Fallback behaviour: the risk engine defaults to the cached trust score rather than returning an error to the user.
+- **Amazon SQS DLQ:** Any event that fails processing after 3 Kafka retries is moved to a Dead Letter Queue. A CloudWatch alarm fires on DLQ depth > 100, triggering an OpsGenie alert. Failed events are replayed after the upstream dependency recovers.
+
+### Graceful Degradation for Tier-2 Connectivity
+
+Liveness checks over a 4G connection in Tier-2 markets can hit 800ms+ under congestion. The system implements a degradation ladder:
+
+1. **Primary:** Liveness verification (< 200ms on good connectivity)
+2. **Fallback 1:** Encrypted push-notification step-up (OTP-equivalent security, no camera required)
+3. **Fallback 2:** Interactive Secure IVR (for feature-phone edge cases)
+
+The degradation decision is made by the Auth API based on real-time network quality signals from the client SDK, not a static configuration flag.
+
+### Continuous Chaos Engineering
+
+Resilience claims require evidence. A weekly Gremlin chaos schedule injects the following fault classes into the staging environment:
+
+- `latency` attack on UIDAI egress (simulating bureau slowdowns)
+- `blackhole` attack on one Kafka broker
+- Pod termination on 30% of Risk API replicas
+
+Runbooks are tested, not assumed. Any chaos scenario that breaks the p99 SLO triggers a blameless post-mortem and architectural review.
+
+---
+
+## 6. Conclusion: Compliance as a Scalable Engineering Feature
+
+The central thesis of this architecture is that DPDP compliance and sub-second latency are not in tension — they are mutually reinforcing when treated as engineering constraints from the start.
+
+Tokenising PII at ingestion eliminates entire classes of data breach risk, while simultaneously making the risk engine faster by reducing the data payload it must process. CQRS separates the slow, regulated data flows (UIDAI, CIBIL) from the fast, user-facing transaction path. QLDB's immutability is not just a compliance checkbox — it is an operational debugging tool, providing a forensic-grade audit trail for every auth decision.
+
+The DPDP Act is often framed as a compliance burden. Architecturally, it is a forcing function for better system design: data minimisation leads to smaller attack surfaces, consent management leads to explicit data contracts, and audit trails lead to operational accountability.
+
+**The result:** A system where the most secure path for the user is also the fastest one.
+
+---
+
+*Curious about the product and UX decisions behind this architecture? Read the full PM Case Study on Notion. Connect on LinkedIn for ongoing commentary on FinTech infrastructure, DPDP compliance engineering, and the intersection of GRC and product strategy.*
