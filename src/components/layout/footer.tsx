@@ -13,7 +13,7 @@ const Footer = () => {
         </a>
         <div className='flex flex-col text-sm text-balance sm:text-left text-center text-muted-foreground gap-1 justify-center sm:justify-start'>
           <p className='font-semibold text-foreground text-base'>Lakshya Tangri</p>
-          <p>Enterprise Architect | Solution Architect | AI, Cloud & Data</p>
+          <p>
           <p>
             <a href="tel:+447444766982" className='hover:text-primary transition-colors'>+44 7444766982</a> |
             <a href="mailto:info@lakshyatangri.com" className='hover:text-primary transition-colors ml-1'>info@lakshyatangri.com</a>

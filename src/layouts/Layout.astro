@@ -5,7 +5,7 @@ import { ClientRouter } from 'astro:transitions'
 
 import HeadSeo from '@/layouts/HeadSeo.astro'
 import Header from '@/components/layout/header'
-import Footer from '@/components/layout/footer'
+
 
 import type { NavigationSection } from '@/components/blocks/menu-navigation'
 
@@ -86,8 +86,6 @@ const seoProps = Astro.props as Props
 
       <main class='flex flex-col *:scroll-mt-15.5'><slot /></main>
 
-      {/* Footer Section */}
-      <Footer client:load />
     </div>
   </body>
 </html>
